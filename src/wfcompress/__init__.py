@@ -17,7 +17,7 @@ inventory and batch tooling lives in :mod:`wfcompress.lab`, which imports from h
 other way round.
 """
 
-from .codec import LosslessCheckFailed, compress, decompress, sha256_file
+from .codec import LosslessCheckFailed, compress, decompress, sha256_file, verify
 from .container import read_meta
 from .frames import GeometryUnknown
 from .provenance import provenance
@@ -27,6 +27,7 @@ __all__ = [
     "compress",
     "decompress",
     "sha256_file",
+    "verify",
     "read_meta",
     "provenance",
     "WfzReader",

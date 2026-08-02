@@ -55,6 +55,19 @@ def cmd_decompress(args) -> int:
     return 0 if result["size_matches"] else 1
 
 
+def cmd_check(args) -> int:
+    """Prove a .wfz rebuilds its source archive, writing nothing."""
+    r = codec.verify(args.src, threads=args.threads,
+                     progress=None if args.quiet else _progress("verify", 1))
+    if r["byte_identical"] is None:
+        print("  pixel hash OK; this file predates source_tar_sha256 so byte-identity "
+              "cannot be checked without the original")
+        return 0
+    print(f"  rebuilt {r['rebuilt_bytes']/1e9:.2f} GB   sha256 {r['tar_sha256'][:16]}...   "
+          f"BYTE-IDENTICAL to the source archive")
+    return 0
+
+
 def cmd_verify(args) -> int:
     a, b = codec.sha256_file(args.a), codec.sha256_file(args.b)
     print(f"  {a}  {Path(args.a).name}")
@@ -107,6 +120,10 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("a")
     v.add_argument("b")
     v.set_defaults(func=cmd_verify)
+
+    ck = sub.add_parser("check", help="prove a .wfz rebuilds its source, writing nothing")
+    ck.add_argument("src")
+    ck.set_defaults(func=cmd_check)
 
     i = sub.add_parser("info", help="print a .wfz's metadata")
     i.add_argument("src")

@@ -9,7 +9,15 @@ import numpy as np
 import pytest
 import tifffile
 
-from wfcompress import GeometryUnknown, WfzReader, compress, decompress, read_meta, sha256_file
+from wfcompress import (
+    GeometryUnknown,
+    WfzReader,
+    compress,
+    decompress,
+    read_meta,
+    sha256_file,
+    verify,
+)
 
 
 def make_frames(n=12, rows=40, cols=48, shift=0, seed=0):
@@ -190,6 +198,55 @@ def test_uniform_shells_are_stored_once(tmp_path):
     meta = compress(src, tmp_path / "a.wfz")
     assert meta["shells_uniform"]
     assert meta["n_distinct_shells"] == 1
+
+
+def test_recorded_source_hash_is_the_real_file_hash(tmp_path):
+    """The whole streaming-verify design rests on this: the hash accumulated during the sequential
+    compress pass must equal the hash of the file on disk. If the pass ever skipped a header, a
+    padding block or the trailer, verification would be comparing against a fiction.
+    """
+    for maker, kw in ((write_tiff_tar, {}), (write_raw_tar, {"shape": (40, 48)})):
+        src = tmp_path / f"in_{maker.__name__}.tar"
+        maker(src, make_frames())
+        meta = compress(src, tmp_path / f"{src.stem}.wfz", **kw)
+        assert meta["source_tar_sha256"] == sha256_file(src)
+
+
+@pytest.mark.parametrize("shift", [0, 4])
+def test_verify_proves_byte_identity_without_writing(tmp_path, shift):
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, make_frames(shift=shift))
+    wfz = tmp_path / "a.wfz"
+    compress(src, wfz)
+
+    before = set(tmp_path.iterdir())
+    result = verify(wfz)
+    assert result["byte_identical"] is True
+    assert result["tar_sha256"] == sha256_file(src)
+    assert result["rebuilt_bytes"] == src.stat().st_size
+    assert set(tmp_path.iterdir()) == before, "verify must not create files"
+
+
+def test_verify_agrees_with_decompress_and_diff(tmp_path):
+    """The cheap check and the expensive one must reach the same verdict."""
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, make_frames(n=20, shift=4))
+    wfz, out = tmp_path / "a.wfz", tmp_path / "out.tar"
+    compress(src, wfz)
+    decompress(wfz, out)
+    assert verify(wfz)["tar_sha256"] == sha256_file(out) == sha256_file(src)
+
+
+def test_verify_catches_a_corrupted_payload(tmp_path):
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, make_frames())
+    wfz = tmp_path / "a.wfz"
+    compress(src, wfz)
+    blob = bytearray(wfz.read_bytes())
+    blob[300] ^= 0xFF
+    wfz.write_bytes(bytes(blob))
+    with pytest.raises(Exception):
+        verify(wfz)
 
 
 def test_corrupted_codestream_is_caught(tmp_path):

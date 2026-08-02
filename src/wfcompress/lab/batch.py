@@ -46,21 +46,24 @@ def process_one(
     )
 
     if verify_full:
-        restored = out_path.with_suffix(out_path.suffix + ".restored.tar")
-        try:
+        if keep_restored:
+            # only when someone wants the rebuilt archive on disk to look at; costs the full
+            # uncompressed size in writes plus two passes to hash both files
+            restored = out_path.with_suffix(out_path.suffix + ".restored.tar")
             codec.decompress(out_path, restored, threads=threads)
-            a = codec.sha256_file(tar_path)
-            b = codec.sha256_file(restored)
-            result["tar_sha256"] = a
-            result["restored_sha256"] = b
-            result["byte_identical"] = a == b
+            a, b = codec.sha256_file(tar_path), codec.sha256_file(restored)
+            result.update(tar_sha256=a, restored_sha256=b, byte_identical=a == b)
             if a != b:
-                raise codec.LosslessCheckFailed(
-                    f"{tar_path}: restored archive differs from the original"
-                )
-        finally:
-            if restored.exists() and not keep_restored:
-                restored.unlink()
+                raise codec.LosslessCheckFailed(f"{tar_path}: restored archive differs")
+        else:
+            # stream the reconstruction through SHA-256 and compare against the hash taken from
+            # the source during compression -- same guarantee, a fraction of the I/O
+            v = codec.verify(out_path, threads=threads)
+            result.update(
+                tar_sha256=v["tar_sha256"],
+                byte_identical=v["byte_identical"],
+                verified_by="stream",
+            )
 
     result["elapsed_s"] = time.perf_counter() - t0
     result["ok"] = True

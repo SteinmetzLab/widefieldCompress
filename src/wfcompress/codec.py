@@ -56,6 +56,27 @@ def _detect_shift(path: Path, entries, layout, probe: int = 400) -> tuple[int, i
     return ((or_mask & -or_mask).bit_length() - 1), or_mask.bit_length()
 
 
+def _entry_spans(entries, batch: int) -> list[tuple[int, int, int]]:
+    """Group entries into contiguous spans of at most ``batch`` data members each.
+
+    Returns (first_entry, last_entry_exclusive, index_of_first_data_member). Spans tile the archive
+    with no gaps, so reading them in order is a single sequential pass over the file.
+    """
+    spans, span_start, in_span, member_i, first_member = [], 0, 0, 0, 0
+    for k, e in enumerate(entries):
+        if e.size:
+            if in_span == 0:
+                first_member = member_i
+            in_span += 1
+            member_i += 1
+        if in_span == batch:
+            spans.append((span_start, k + 1, first_member))
+            span_start, in_span = k + 1, 0
+    if span_start < len(entries):
+        spans.append((span_start, len(entries), first_member))
+    return spans
+
+
 def compress(
     src: str | Path,
     dst: str | Path,
@@ -113,15 +134,32 @@ def compress(
             raise LosslessCheckFailed(f"frame {i}: member does not reassemble to its original bytes")
         return i, code, shell, pixels.tobytes()
 
+    # Read the source strictly sequentially, in spans covering whole entries, and hash every byte
+    # as it goes. That yields the true SHA-256 of the archive for free, which is what lets
+    # verification stream the reconstruction and compare hashes instead of writing a restored tar
+    # back to the server and re-reading both files (4.9x the source bytes in I/O, vs 1.9x).
+    tar_hash = hashlib.sha256()
+    spans = _entry_spans(entries, batch)
+
     dst.parent.mkdir(parents=True, exist_ok=True)
     with open(src, "rb") as fin, open(dst, "wb") as fout, ThreadPoolExecutor(threads) as pool:
         container.write_header(fout)
-        for start in range(0, len(members), batch):
-            chunk = members[start : start + batch]
+        for span_start, span_end, first_member in spans:
+            byte_start = entries[span_start].data_offset - tarwalk.BLOCK
+            byte_end = entries[span_end - 1].end_offset
+            fin.seek(byte_start)
+            block = fin.read(byte_end - byte_start)
+            if len(block) != byte_end - byte_start:
+                raise LosslessCheckFailed(f"{src}: truncated read at offset {byte_start}")
+            tar_hash.update(block)
+
             jobs = []
-            for i, e in enumerate(chunk, start=start):
-                fin.seek(e.data_offset)
-                jobs.append((i, fin.read(e.size)))
+            i = first_member
+            for e in entries[span_start:span_end]:
+                if e.size:
+                    off = e.data_offset - byte_start
+                    jobs.append((i, block[off : off + e.size]))
+                    i += 1
             for i, code, shell, body in sorted(pool.map(encode, jobs), key=lambda r: r[0]):
                 pixel_hash.update(body)
                 shell_ids.append(shell_pool.setdefault(shell, len(shell_pool)))
@@ -129,8 +167,7 @@ def compress(
                 fout.write(code)
                 pos += len(code)
             if progress:
-                done = min(start + batch, len(members))
-                progress(done, len(members), time.perf_counter() - t0)
+                progress(min(i + 1, len(members)), len(members), time.perf_counter() - t0)
 
         unique_shells = sorted(shell_pool, key=shell_pool.get)  # type: ignore[arg-type]
         uniform = len(unique_shells) == 1
@@ -162,6 +199,7 @@ def compress(
             "n_distinct_shells": len(unique_shells),
             "shell_len": len(unique_shells[0]),
             "pixels_sha256": pixel_hash.hexdigest(),
+            "source_tar_sha256": None,  # filled in below, once the trailer has been hashed
             "byte_identical_restore": True,
             "provenance": provenance(),
             "how_to_decompress": (
@@ -170,6 +208,8 @@ def compress(
             ),
         }
         trailer = tarwalk.trailing_bytes(src, entries)
+        tar_hash.update(trailer)
+        meta["source_tar_sha256"] = tar_hash.hexdigest()
         footer = container.Footer(
             meta=meta,
             index=index,
@@ -191,15 +231,19 @@ def compress(
     return meta
 
 
-def decompress(
+def iter_tar_bytes(
     src: str | Path,
-    dst: str | Path,
     threads: int = DEFAULT_THREADS,
     batch: int = DEFAULT_BATCH,
     progress: Callable[[int, int, float], None] | None = None,
-) -> dict:
-    """Rebuild the original tar from a .wfz. Verifies the pixel hash before returning."""
-    src, dst = Path(src), Path(dst)
+):
+    """Yield the reconstructed original archive as a stream of byte chunks.
+
+    Both :func:`decompress` and :func:`verify` go through this, so there is exactly one
+    implementation of the reconstruction and they cannot drift apart. Yields the pixel SHA-256 as
+    a final ``("__pixels__", digest)`` sentinel.
+    """
+    src = Path(src)
     t0 = time.perf_counter()
     footer = container.read_footer(src)
     meta, index = footer.meta, footer.index
@@ -224,8 +268,7 @@ def decompress(
         return i, shell[:px_start] + body + shell[px_start:], body
 
     header_i = 0
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    with open(src, "rb") as fin, open(dst, "wb") as fout, ThreadPoolExecutor(threads) as pool:
+    with open(src, "rb") as fin, ThreadPoolExecutor(threads) as pool:
         for start in range(0, n, batch):
             jobs = []
             for i in range(start, min(start + batch, n)):
@@ -234,31 +277,99 @@ def decompress(
             for i, member, body in sorted(pool.map(decode, jobs), key=lambda r: r[0]):
                 # re-emit any zero-size entries (directories) that preceded this member
                 while True:
-                    h = footer.tar_headers[header_i * tarwalk.BLOCK : (header_i + 1) * tarwalk.BLOCK]
+                    h = footer.tar_headers[
+                        header_i * tarwalk.BLOCK : (header_i + 1) * tarwalk.BLOCK
+                    ]
                     header_i += 1
-                    fout.write(h)
+                    yield h
                     if int(h[124:136].rstrip(b"\0 ").decode("ascii", "replace") or "0", 8):
                         break
-                fout.write(member)
+                yield member
                 pad = (-len(member)) % tarwalk.BLOCK
                 if pad:
-                    fout.write(b"\0" * pad)
+                    yield b"\0" * pad
                 pixel_hash.update(body)
             if progress:
                 progress(min(start + batch, n), n, time.perf_counter() - t0)
-        fout.write(footer.trailer)
+        yield footer.trailer
 
     if pixel_hash.hexdigest() != meta["pixels_sha256"]:
         raise LosslessCheckFailed(
             f"{src}: pixel SHA-256 does not match the value recorded at compression time"
         )
+
+
+def decompress(
+    src: str | Path,
+    dst: str | Path,
+    threads: int = DEFAULT_THREADS,
+    batch: int = DEFAULT_BATCH,
+    progress: Callable[[int, int, float], None] | None = None,
+) -> dict:
+    """Rebuild the original tar from a .wfz. Verifies the pixel hash before returning."""
+    src, dst = Path(src), Path(dst)
+    t0 = time.perf_counter()
+    meta = container.read_meta(src)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with open(dst, "wb") as fout:
+        for chunk in iter_tar_bytes(src, threads, batch, progress):
+            fout.write(chunk)
     return {
         "output_bytes": dst.stat().st_size,
         "source_bytes": meta["source_bytes"],
         "size_matches": dst.stat().st_size == meta["source_bytes"],
         "elapsed_s": time.perf_counter() - t0,
-        "n_frames": n,
+        "n_frames": meta["n_frames"],
     }
+
+
+def verify(
+    src: str | Path,
+    threads: int = DEFAULT_THREADS,
+    batch: int = DEFAULT_BATCH,
+    progress: Callable[[int, int, float], None] | None = None,
+) -> dict:
+    """Prove a .wfz rebuilds the original archive, **without writing anything**.
+
+    Streams the reconstruction through SHA-256 and compares with the hash taken from the source
+    file during compression. Equivalent in strength to decompressing and diffing, at a fraction of
+    the I/O: reads only the .wfz, where the decompress-and-compare route reads and writes the full
+    uncompressed archive as well.
+    """
+    src = Path(src)
+    t0 = time.perf_counter()
+    meta = container.read_meta(src)
+    expected = meta.get("source_tar_sha256")
+
+    h = hashlib.sha256()
+    total = 0
+    for chunk in iter_tar_bytes(src, threads, batch, progress):
+        h.update(chunk)
+        total += len(chunk)
+    digest = h.hexdigest()
+
+    result = {
+        "wfz": str(src),
+        "rebuilt_bytes": total,
+        "source_bytes": meta["source_bytes"],
+        "size_matches": total == meta["source_bytes"],
+        "tar_sha256": digest,
+        "expected_tar_sha256": expected,
+        "byte_identical": (expected is not None and digest == expected),
+        "elapsed_s": time.perf_counter() - t0,
+    }
+    if expected is None:
+        # written by a build that predates source_tar_sha256; the pixel hash was still checked
+        result["byte_identical"] = None
+    elif digest != expected:
+        raise LosslessCheckFailed(
+            f"{src}: rebuilt archive hashes {digest}, expected {expected}"
+        )
+    if not result["size_matches"]:
+        raise LosslessCheckFailed(
+            f"{src}: rebuilt {total} bytes, source was {meta['source_bytes']}"
+        )
+    return result
 
 
 def sha256_file(path: str | Path, block: int = 1 << 24) -> str:
