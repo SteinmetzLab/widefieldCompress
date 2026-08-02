@@ -286,6 +286,32 @@ things change that materially:
 
 ---
 
+## 7a. Geometry coverage on Y: (checked)
+
+TIFF members carry their own geometry; headerless ones do not, and the only authoritative source is
+`blue/meanImage.npy`.
+
+| | archives | size |
+|---|---|---|
+| TIFF, geometry self-evident | 1,025 | 112.53 TB |
+| headerless, geometry recoverable | 83 | 6.47 TB |
+| **headerless, blocked — no `meanImage.npy`** | **18** | **1.68 TB** |
+
+**All 18 blocked archives also have no SVD output**, so they are unprocessed sessions where the tar
+is the only copy — the highest-risk category, and they need a human decision rather than a default.
+
+Two things make them tractable when someone wants to deal with them:
+
+- Every one has **exactly 627,200 B members**, identical to the 83 headerless archives whose
+  geometry *is* known, and all 83 of those are 560×560. So 560×560 is near-certain.
+- A wrong-but-same-size shape is **not a data-integrity risk**. Pixels are stored and returned in
+  file order regardless of how they are shaped for the predictor, so the tar still rebuilds
+  byte-for-byte; the cost is a worse ratio and a wrongly-shaped array out of `WfzReader.frame()`.
+  (`tests/test_roundtrip.py::test_size_compatible_wrong_shape_still_restores_byte_identically`.)
+
+So `--shape 560 560` is a defensible call for these, with bounded downside. It should still be an
+explicit decision, not a default — which is why the tool refuses rather than guessing.
+
 ## 8. Next steps
 
 Resolved: nothing reads the tars; Z: deferred; the bulk job runs on the server over SSH; the raw
