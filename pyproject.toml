@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wfcompress"
+version = "0.1.0"
+description = "Lossless compression of tar archives of scientific camera frames (TIFF or headerless raw)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Steinmetz Lab" }]
+keywords = ["compression", "lossless", "jpeg-ls", "widefield", "imaging", "tiff"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+  "numpy>=1.23",
+  "imagecodecs>=2023.1.23",
+  "tifffile>=2022.8.12",
+  "zstandard>=0.19",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.1"]
+
+[project.urls]
+Homepage = "https://github.com/SteinmetzLab/widefieldCompress"
+
+[project.scripts]
+wfcompress = "wfcompress.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
