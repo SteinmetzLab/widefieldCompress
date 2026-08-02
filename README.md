@@ -5,7 +5,7 @@ Lossless compression of tar archives that hold one uncompressed camera frame per
 Writing every frame as its own uncompressed TIFF (or headerless raw block) into a tar is a common
 way to get data off an acquisition machine quickly — the write is cheap and the next session can
 start. It is also extremely wasteful to keep. This turns those archives into a form that is
-**typically 2.4–2.9× smaller and rebuilds the original byte-for-byte**.
+**typically 2.2–2.9× smaller and rebuilds the original byte-for-byte**.
 
 Built for widefield calcium imaging in the [Steinmetz Lab](https://www.steinmetzlab.net), but the
 core knows nothing about widefield, or about any particular server.
@@ -14,6 +14,7 @@ core knows nothing about widefield, or about any particular server.
 pip install git+https://github.com/SteinmetzLab/widefieldCompress
 
 wfcompress compress   widefield.tar widefield.wfz
+wfcompress check      widefield.wfz                  # proves byte-identity, writes nothing
 wfcompress decompress widefield.wfz restored.tar
 wfcompress verify     widefield.tar restored.tar     # -> IDENTICAL
 ```
@@ -36,7 +37,12 @@ with WfzReader("widefield.wfz") as r:
    detected per archive, recorded, and undone on read.
 3. **Encodes each frame with JPEG-LS** in lossless mode (`near=0`).
 4. **Verifies while writing.** Every frame is decoded again immediately after encoding and
-   compared with the source. Any mismatch aborts before anything is committed.
+   compared with the source, and each member must reassemble to its original bytes. Any mismatch
+   aborts before anything is committed.
+5. **Records the source archive's SHA-256** during the sequential read, so `wfcompress check`
+   can later prove byte-identity by streaming the reconstruction through a hash rather than
+   writing a restored archive back out. That is 1.9x the source bytes in I/O rather than 4.9x --
+   on a 100 TB corpus, the difference between weeks and months.
 
 ### Why JPEG-LS
 

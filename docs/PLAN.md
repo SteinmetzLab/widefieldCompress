@@ -268,21 +268,62 @@ compressed versions.
 
 ---
 
+## 6a. Phase 1 pilot — done
+
+9 sessions, both flavours, six geometries, both shift values, eras 2020→2026. `.wfz` written beside
+each original; **nothing deleted**. Log in `data/pilot_log.jsonl`.
+
+| ratio | shift | geometry | size | session |
+|---|---|---|---|---|
+| 2.35 | 4 | 560×560 | 1.19 GB | test/2026-02-17/1 |
+| 2.18 | 4 | 512×512 | 1.57 GB | ZYE_0035/2021-07-17/1 |
+| 2.36 | 0 | 560×560 | 1.61 GB | AL_0033/2025-03-17/1 |
+| 2.61 | 0 | 560×560 | 3.33 GB | AL_0048/2026-06-11/4 |
+| — | — | — | 10.4 GB | test/2025-11-05/1 — **refused**, geometry unknown (intended) |
+| 2.28 | 4 | 512×564 | 20.25 GB | ZYE_0008/2020-07-25/1 |
+| 2.17 | 4 | 521×576 | 28.00 GB | SM_0001/2020-09-03/1 |
+| 2.39 | 4 | 350×560 | 31.64 GB | AL_0023/2023-05-15/5 |
+| 2.17 | 4 | 481×512 | 31.91 GB | ZYE_0007/2020-07-29/1 |
+
+**8/8 attempted sessions byte-identical. 119.5 GB → 52.9 GB, pooled x2.26.**
+
+That 2.26 is *not* the corpus figure: the pilot took one session per geometry, which heavily
+over-samples rare configurations. Weighting by actual corpus composition — 560×560 basler is 51 %
+of archives, frame-N 560×560 another 28 %, 512×512 15 % — gives **~2.5**. Older sessions (2020–21)
+compress consistently worse than recent ones (2.17–2.28 vs 2.35–2.88).
+
+**Y: projection: 120.7 TB → ~48 TB, reclaiming ~72 TB** at 2.5; ~53 TB retained at the conservative
+2.26.
+
 ## 7. Time
+
+Phase 1 established that **verification, not compression, was the bottleneck.** Decompressing to a
+file and hashing both copies cost 4.9× the source bytes in I/O, and SMB tops out near 100 MB/s —
+the Y: corpus would have taken ~70 days from the workstation.
+
+Verification now streams the reconstruction through SHA-256 and writes nothing, comparing against a
+hash taken from the source during the (now strictly sequential) compress pass. Measured on real
+sessions, with both routes agreeing on byte-identity:
+
+| session | compress | stream verify | old decompress+diff | total |
+|---|---|---|---|---|
+| AL_0048, 3.33 GB | 1.5 min | 0.6 min | 1.3 min | 2.1 vs 2.8 min |
+| ZYE_0008, 20.25 GB | 10.1 min | 3.8 min | 7.1 min | **13.9 vs 24.7 min** |
+
+I/O per session drops from 4.9× to 1.9× the source bytes; ~1.8× faster end to end. Extrapolated,
+Y: goes from ~70 days to **~39 days from the workstation** — still far too slow, which settles the
+question: **the bulk run has to happen on the server.** There it is local disk rather than SMB, with
+more cores; the thread sweep in `RUNNING_ON_THE_SERVER.md` §3 will establish the real rate.
+
+Note the throughput during compression (33.5 MB/s at 8 threads, against ~48 MB/s of SMB traffic and
+a theoretical ~136 MB/s of CPU) sits below both ceilings, so there is headroom to find — likely GIL
+contention in the Python glue, or read latency. Worth measuring properly on the server before
+committing to a schedule.
 
 JPEG-LS at 30 MB/s encode + 39 MB/s verify-decode per core → ~17 MB/s/core for encode+verify.
 
-- **16 cores**: ~270 MB/s → 170 TB ≈ **7–8 days of pure compute**.
-- **Network**: 170 TB read + 68 TB written + 68 TB re-read to verify ≈ 306 TB. At a realistic
-  ~700 MB/s SMB, ≈ **5 days**.
-
-Overlapped and flat out, ~1.5 weeks; realistically **3–4 weeks** with normal lab contention. Two
-things change that materially:
-
-- **Run it on the server itself** if it has spare CPU — removes ~306 TB of network traffic and is by
-  far the biggest single win available.
-- **Throttle deliberately.** A job that saturates the share ruins everyone's day. Cap workers,
-  consider nights and weekends.
+**Throttle deliberately** either way. A job that saturates the share ruins everyone's day. Cap
+workers and consider nights and weekends.
 
 ---
 
