@@ -147,6 +147,51 @@ def test_metadata_is_self_describing(tmp_path):
     assert meta["shift"] == 4
 
 
+def _tar_with_varying_headers(path, frames, descriptions):
+    """TIFFs whose metadata differs per frame, so the shells are not all identical."""
+    with tarfile.open(path, "w") as tf:
+        for i, (f, desc) in enumerate(zip(frames, descriptions)):
+            buf = io.BytesIO()
+            tifffile.imwrite(buf, f, photometric="minisblack", description=desc)
+            data = buf.getvalue()
+            info = tarfile.TarInfo(f"1/frame_{i:05d}.tiff")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+
+
+def test_varying_but_equal_length_shells_roundtrip(tmp_path):
+    """Per-frame metadata of a constant size is stored per frame and must still be exact."""
+    frames = make_frames(n=8)
+    src = tmp_path / "in.tar"
+    # same length, different content -> shells differ but the fixed-stride blob is still valid
+    _tar_with_varying_headers(src, frames, [f"frame{i:04d}" for i in range(len(frames))])
+
+    wfz, out = tmp_path / "a.wfz", tmp_path / "out.tar"
+    meta = compress(src, wfz)
+    assert not meta["shells_uniform"]
+    assert meta["n_distinct_shells"] == len(frames)
+    decompress(wfz, out)
+    assert sha256_file(src) == sha256_file(out)
+
+
+def test_unequal_length_shells_are_refused_not_corrupted(tmp_path):
+    """Different header sizes would break the reader's fixed-stride slicing, so refuse."""
+    frames = make_frames(n=8)
+    src = tmp_path / "in.tar"
+    _tar_with_varying_headers(src, frames, ["x" * (10 + 7 * i) for i in range(len(frames))])
+    with pytest.raises(NotImplementedError, match="header sizes"):
+        compress(src, tmp_path / "a.wfz")
+
+
+def test_uniform_shells_are_stored_once(tmp_path):
+    frames = make_frames(n=64)
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, frames)
+    meta = compress(src, tmp_path / "a.wfz")
+    assert meta["shells_uniform"]
+    assert meta["n_distinct_shells"] == 1
+
+
 def test_corrupted_codestream_is_caught(tmp_path):
     src = tmp_path / "in.tar"
     write_tiff_tar(src, make_frames())

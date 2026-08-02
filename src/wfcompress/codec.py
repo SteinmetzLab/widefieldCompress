@@ -85,7 +85,11 @@ def compress(
     low_mask = (1 << shift) - 1
 
     index = np.zeros((len(members), 3), dtype=np.int64)
-    shells: list[bytes] = []
+    # Shells are identical across frames in every session seen so far, so intern them rather than
+    # keeping one per frame: at 4.6 KB each, a 680k-frame archive would otherwise hold ~3 GB of
+    # duplicate bytes on the heap purely to write one copy out at the end.
+    shell_pool: dict[bytes, int] = {}
+    shell_ids: list[int] = []
     pixel_hash = hashlib.sha256()
     pos = container.PAYLOAD_START
 
@@ -102,6 +106,11 @@ def compress(
         restored = (back.astype(np.uint32) << shift).astype(layout.dtype)
         if not np.array_equal(restored, pixels):
             raise LosslessCheckFailed(f"frame {i}: bit-shift round trip differs")
+        # The layout was read from the first member and assumed for the rest. Prove per frame that
+        # splitting and rejoining reproduces this member exactly, so byte-identical restore is
+        # demonstrated rather than inferred.
+        if frames.join(restored, shell, layout) != raw:
+            raise LosslessCheckFailed(f"frame {i}: member does not reassemble to its original bytes")
         return i, code, shell, pixels.tobytes()
 
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -115,7 +124,7 @@ def compress(
                 jobs.append((i, fin.read(e.size)))
             for i, code, shell, body in sorted(pool.map(encode, jobs), key=lambda r: r[0]):
                 pixel_hash.update(body)
-                shells.append(shell)
+                shell_ids.append(shell_pool.setdefault(shell, len(shell_pool)))
                 index[i] = (pos, len(code), zlib.crc32(code))
                 fout.write(code)
                 pos += len(code)
@@ -123,7 +132,15 @@ def compress(
                 done = min(start + batch, len(members))
                 progress(done, len(members), time.perf_counter() - t0)
 
-        uniform = len(set(shells)) == 1
+        unique_shells = sorted(shell_pool, key=shell_pool.get)  # type: ignore[arg-type]
+        uniform = len(unique_shells) == 1
+        # The footer stores varying shells as a flat blob and the reader slices it at a fixed
+        # stride, so unequal lengths would silently reassemble into the wrong bytes. Refuse.
+        if not uniform and len({len(s) for s in unique_shells}) != 1:
+            raise NotImplementedError(
+                f"{src.name}: members have {len({len(s) for s in unique_shells})} different "
+                "header sizes; the container assumes a fixed shell length"
+            )
         meta = {
             "format": "wfz",
             "format_version": 1,
@@ -142,7 +159,8 @@ def compress(
             "shift": shift,
             "payload_bits": max(payload_bits - shift, 0),
             "shells_uniform": uniform,
-            "shell_len": len(shells[0]),
+            "n_distinct_shells": len(unique_shells),
+            "shell_len": len(unique_shells[0]),
             "pixels_sha256": pixel_hash.hexdigest(),
             "byte_identical_restore": True,
             "provenance": provenance(),
@@ -156,7 +174,11 @@ def compress(
             meta=meta,
             index=index,
             tar_headers=b"".join(e.header for e in entries),
-            shells=(shells[0] if uniform else b"".join(shells)),
+            shells=(
+                unique_shells[0]
+                if uniform
+                else b"".join(unique_shells[sid] for sid in shell_ids)
+            ),
             trailer=trailer,
         )
         footer_bytes = container.finalise(fout, pos, footer)
