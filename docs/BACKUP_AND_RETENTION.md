@@ -1,144 +1,142 @@
-# Backblaze B2: what to check before deleting anything
+# Backblaze B2: what happens to the bill when we delete
 
-**Deleting 75 TB from the share does not reduce the B2 bill.** Not immediately, and depending on
-how the bucket is configured, possibly not ever without a settings change. Old versions of deleted
-files keep billing as stored data until a lifecycle rule actually removes them.
-
-Three things determine what happens, and they need checking in this order.
+Status: **partly answered.** The bucket's retention policy is known. What is *not* yet known is
+whether deletions on the server propagate to B2 at all — which matters far more.
 
 ---
 
-## 1. What tool writes the backup?
+## 1. Retention: answered — 60 days
 
-This matters more than any B2 setting, because it decides whether "delete on the source" even
-becomes "delete an object in B2".
+The bucket's Lifecycle Settings are set to *"Keep prior versions for this number of days: 60"*,
+i.e. a lifecycle rule of `daysFromHidingToDeleting: 60` over the whole bucket.
 
-```bash
-ssh <you>@sahale.biostr.washington.edu
-systemctl list-timers --all | grep -iE 'backup|b2|rclone|restic|dup'
-crontab -l; sudo crontab -l; ls -la /etc/cron.d/
-ps aux | grep -iE 'rclone|restic|b2|duplicati|borg|veeam'
-ls -la ~/.config/rclone/rclone.conf /etc/rclone.conf 2>/dev/null
-```
+So when a file is deleted on the server and that deletion reaches B2, the prior version is retained
+for **60 days** and then permanently removed. Storage billing stops at that point, not at deletion.
 
-**File-mirror tools** — `rclone sync`, `b2 sync`, Synology Cloud Sync. One object per file. Deleting
-the source deletes (or hides) the object, and §2 governs when the storage is actually released.
-This is the good case.
+**Consequence: savings lag deletion by two months.** That is the whole cost of this setting.
 
-**Chunked/deduplicating tools** — `restic`, `borg`, `duplicati`, `kopia`, Veeam, Arq. Your data is
-inside pack files, and there is no object corresponding to `widefield.tar`. Deleting the source
-frees **nothing** until you run the tool's own prune/compact, which rewrites packs and, on a
-100 TB+ repository, is a slow and I/O-heavy operation you need to plan for.
+## 2. Should we shorten it for the widefield paths? No.
 
-```bash
-# if it turns out to be restic
-restic -r <repo> forget --prune --dry-run     # shows what would actually be reclaimed
-```
+It is technically possible — B2 lifecycle rules are per-prefix and the CLI (`b2 bucket update
+--lifecycle-rules '[...]'`) accepts an array of them, which the web UI's single-path box cannot
+express. But it is not worth doing, for three reasons.
 
-If `rclone` is in use, also check for `--backup-dir`: that moves superseded files to a second
-location instead of deleting them, which is a copy the lifecycle rules will not touch.
+**The money is small.** At ~$6/TB/month:
 
----
-
-## 2. Bucket lifecycle rules
-
-**Web UI:** Buckets → the bucket → *Lifecycle Settings*.
-
-**CLI:**
-
-```bash
-pip install b2
-b2 account authorize                  # older versions: b2 authorize-account
-b2 bucket get <bucketName>            # older versions: b2 get-bucket <bucketName>
-```
-
-Look at `lifecycleRules` in the JSON:
-
-| what you see | what it means |
+| | |
 |---|---|
-| `[]` (empty) — "Keep all versions" | **Nothing is ever deleted.** Every version of every file bills forever. This is the default for new buckets and the worst case for you. |
-| `daysFromHidingToDeleting: 1` — "Keep only the last version" | A deleted file's last version disappears ~1 day later. Savings land almost immediately. |
-| `daysFromHidingToDeleting: N` | Savings land N days after you delete. |
-| `daysFromUploadingToHiding: N` | Files are auto-hidden N days after upload regardless of the source — worth understanding if present. |
+| to delete after compression | 72.4 TB |
+| cost of the 60-day lag | **~$870, one-time** |
+| cost if the lag were 1 day | ~$14 |
+| **saving from shortening retention** | **~$850, once** |
+| saving from the compression itself | **~$5,200/year** |
 
-To see what versions actually exist for a path:
+Roughly $850 once, against a $5,200/year win that happens regardless. It is two months of delay,
+not a permanent loss.
+
+**Prefix rules do not fit the data.** Lifecycle prefixes are literal object-name prefixes, not
+globs — there is no way to express "every `widefield.tar`". The tars sit in **1,119 distinct session
+folders across 112 subject folders**, so it would take either 1,119 rules (far beyond B2's per-bucket
+rule cap, which is on the order of 100 — verify before relying on it) or 112 subject-level rules.
+B2 also rejects overlapping prefixes, so subject-level rules could not coexist with the existing
+bucket-wide 60-day rule; it would have to be removed and fully re-expressed. Confirm that
+restriction with a single test rule before planning around it either way.
+
+**Subject-level rules would over-apply.** A rule on `Subjects/AL_0033/` covers *everything*
+underneath — the SVD outputs, the behavioural files, the videos. Shortening retention there means
+that if anything else in those folders is deleted by accident during the campaign, the undo window
+is a day instead of two months. That is a bad trade on the only backup.
+
+**If you do want to accelerate it**, the safe version is to temporarily lower the single
+bucket-wide rule (60 → say 14 days) during the deletion campaign and restore it afterwards. One
+change, uniform, easily reverted. It still thins protection for everything else while it is in
+force.
+
+**My recommendation: leave it at 60 days.** During the one operation where we deliberately delete
+75 TB, a two-month undo window is worth more than $850. Budget for two months of overlap instead.
+
+## 3. The open question that actually matters: does the deletion even reach B2?
+
+Your findings — no `sudo`, no user `crontab`, nothing in `/etc/cron.d` but `at` and
+**`middlewared`**, and no `rclone.conf` anywhere you can see — are consistent and informative.
+
+`middlewared` means **sahale is a TrueNAS box**. On TrueNAS the backup is almost certainly a
+**Cloud Sync Task**, which:
+
+- is configured in the web UI, not in cron;
+- is executed by `middlewared`, not by a user job;
+- **uses rclone underneath**, but keeps its configuration in the TrueNAS config database
+  (`/data/freenas-v1.db`), which is why there is no `rclone.conf` in your home or `/etc`.
+
+That is good news for one earlier worry: rclone maps **one object per file**, so this is not a
+chunked/deduplicating backup (restic, borg, duplicati) where deleting source files frees nothing
+until an expensive prune. Deletions can propagate cleanly.
+
+**But it depends entirely on the task's Transfer Mode:**
+
+| mode | what deleting `widefield.tar` does to B2 |
+|---|---|
+| **SYNC** | removes it there too; the 60-day clock starts; space is reclaimed |
+| **COPY** | **nothing, ever.** The object stays live indefinitely and keeps billing, whatever the lifecycle rule says |
+| MOVE | not applicable here |
+
+If the task is set to COPY — a common and deliberate choice, because it protects against exactly
+the accident of a source-side deletion — then **none of the 72 TB will ever leave the bill without
+someone explicitly deleting the objects in B2.** This is the single most important thing left to
+establish, and it is much more consequential than the 60 days.
+
+## 4. How to find out
+
+**Try the TrueNAS web UI first** — you may well have an account even without shell `sudo`. Go to
+**Data Protection → Cloud Sync Tasks** and look at the task covering the Subjects dataset:
+
+- **Direction** (Push) and **Transfer Mode** (Sync / Copy / Move) ← the answer
+- the **bucket** and **folder** it targets
+- any **Exclude** patterns (are `*.tar` or the video files already excluded?)
+- whether **Remote encryption** is on (still 1:1 per file, but object names are obfuscated)
+- the schedule, and whether it is enabled
+
+**From the shell, without sudo**, these are worth a try and cost nothing:
 
 ```bash
-b2 ls --versions --recursive b2://<bucket>/Subjects/FD_010/2026-02-23/3/
+cat /etc/version 2>/dev/null; uname -a          # confirms TrueNAS and its release
+ls /mnt                                          # TrueNAS pools live here
+midclt call cloudsync.query 2>&1 | head -40      # the middleware CLI; may refuse without root
 ```
 
-A file shows as `upload` (live) or `hide` (a delete marker). Both the marker and the underlying
-version persist — and bill — until the lifecycle rule collects them.
+`midclt` will probably require root, but it is a one-line thing to try.
 
----
+## 5. If you do need the admin, ask exactly these
 
-## 3. Object Lock
+1. Is the B2 backup a TrueNAS Cloud Sync Task, and is its **Transfer Mode SYNC or COPY**?
+2. Does it cover the whole `Subjects` dataset, and are there any **exclude patterns** today?
+3. Is **Object Lock** enabled on the bucket? (It would block deletion regardless of lifecycle
+   rules, and in compliance mode cannot be overridden by anyone.)
 
-If Object Lock is enabled with a retention period, deletion is **blocked** until it expires,
-lifecycle rules notwithstanding. In *compliance* mode it cannot be overridden by anyone, including
-the account owner.
+Question 1 is the one that decides whether this project reduces the bill at all.
 
-```bash
-b2 bucket get <bucketName> | grep -iE 'fileLock|defaultRetention'
-```
+## 6. The empirical check, still the best evidence
 
-Check this before planning any timeline. It is the one setting that can make "reclaim the space"
-impossible on your preferred schedule.
+Whatever the answers, one controlled test settles it for your exact setup:
 
----
-
-## The overlap window — the bill goes up first
-
-The compressed files are new objects, so they get backed up too. While you keep originals (and you
-should, at least for the first tranche), the bucket holds both.
-
-At B2's list price of roughly **$6/TB/month** — check your actual invoice, rates and any negotiated
-discount vary:
-
-| stage | on B2 | ≈ /month |
-|---|---|---|
-| today | 120.7 TB | ~$725 |
-| both originals and `.wfz` | ~166 TB | ~$995 |
-| after versions expire | ~45 TB | ~$270 |
-
-So roughly **$5,500/year** saved once it settles, but a few months of *higher* spend on the way
-there. Two ways to shorten that window:
-
-- **Exclude `widefield.tar` from the backup set** once the matching `.wfz` is verified *and* itself
-  backed up. Stops re-uploading data you are about to delete. Get the ordering right — the `.wfz`
-  must be safely in B2 before the tar leaves the backup set, or you have a gap.
-- **Delete in tranches** rather than all at once, so the overlap applies to a slice at a time.
-
-As far as I know B2 has no minimum storage-duration charge (unlike S3 IA/Glacier), so deletion stops
-the meter as soon as the version is actually removed — but confirm that against an invoice rather
-than taking my word for it.
-
----
-
-## The empirical check, which beats reading any of the above
-
-Your setup is what it is, and one controlled test answers the question definitively:
-
-1. Pick one session that is already compressed and verified (`byte_identical: true` in its receipt).
-2. Note the bucket's current size: `b2 get-bucket <bucket>` or the *Buckets* page.
+1. Pick a session already compressed and verified (`byte_identical: true` in its receipt).
+2. Note the bucket size in the B2 UI.
 3. Delete that one `widefield.tar`.
-4. Watch the bucket size daily for a couple of weeks.
+4. Check after the next backup run whether the object is *hidden* in B2
+   (`b2 ls --versions --recursive b2://<bucket>/<path>/`).
 
-If it drops by ~100 GB after N days, you know the lifecycle delay and that the mapping is 1:1. If it
-never drops, you have either "keep all versions", a chunked backup tool awaiting a prune, or Object
-Lock — and you have learned that for the price of one file rather than 1,100.
+If it is hidden, the mode is SYNC and the space returns in 60 days. If it is still live after a
+couple of backup cycles, the mode is COPY and the plan needs a deliberate B2-side deletion step.
+Either way you learn it for the price of one file rather than 1,120.
 
-Do this **before** the bulk delete, and while the compressed copy plus the original SVD outputs both
-still exist.
+Do this **before** the bulk deletion, while the compressed copy and the SVD outputs both exist.
 
----
+## 7. Also worth confirming
 
-## Also worth confirming
-
-- **Is `Y:\temp` backed up?** The Phase 0.5 and pilot outputs live there. If it is, they are being
-  billed, and they are disposable.
-- **Are the SVD outputs backed up?** They are ~3.8 TB and are the copy that actually gets analysed.
-  They matter more than the raw tars.
-- **What is the restore path?** If 45 TB ever has to come back, egress is free up to 3× stored data
-  per month under B2's current terms, but the wall-clock time is the real constraint. Worth knowing
-  the number before you need it.
+- **Is `Y:\temp` backed up?** The pilot outputs live there and are disposable.
+- **Are the SVD outputs backed up?** ~3.8 TB, and the copy that actually gets analysed — they
+  matter more than the raw tars.
+- **The overlap window.** The `.wfz` files are new objects, so while originals are still present
+  the bucket holds both: ~120.7 TB → ~166 TB → ~48 TB. Excluding `widefield.tar` from the backup
+  set once its `.wfz` is verified *and itself backed up* would avoid re-uploading data that is
+  about to be deleted — get that ordering right or you open a gap.
