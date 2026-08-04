@@ -11,7 +11,6 @@ opening the container.
 
 from __future__ import annotations
 
-import io
 import json
 from pathlib import Path
 
@@ -22,7 +21,7 @@ from .provenance import REPO_URL
 README_TEMPLATE = """# {stem}.wfz — losslessly compressed camera frames
 
 This replaces `{source_name}`, an uncompressed tar of {n_frames:,} camera frames.
-It is **lossless**: the original archive can be rebuilt byte-for-byte.
+It is **lossless**. {verified_line}
 
 | | |
 |---|---|
@@ -68,6 +67,18 @@ Full source, format specification and rationale: {repo}
 """
 
 
+_VERIFIED = (
+    "The rebuild has been verified byte-for-byte: the reconstructed archive was hashed end to "
+    "end and matched the original."
+)
+
+_UNVERIFIED = (
+    "Every frame round-tripped and every member reassembled to its original bytes during "
+    "compression, but the whole rebuilt archive has **not** been hashed end to end. "
+    "Run `wfcompress check` on this file to establish byte-identity."
+)
+
+
 def write_readme(wfz_path: str | Path, meta: dict) -> Path:
     wfz_path = Path(wfz_path)
     stem = wfz_path.name[: -len(".wfz")] if wfz_path.name.endswith(".wfz") else wfz_path.stem
@@ -92,6 +103,7 @@ def write_readme(wfz_path: str | Path, meta: dict) -> Path:
         repo=REPO_URL,
         payload_bits=meta.get("payload_bits", "?"),
         shift=shift,
+        verified_line=_VERIFIED if meta.get("byte_identical_verified") else _UNVERIFIED,
     )
     out = wfz_path.with_name(wfz_path.name + ".README.md")
     out.write_text(text, encoding="utf-8")
@@ -108,8 +120,9 @@ def write_preview_frame(wfz_path: str | Path, n_probe: int = 7) -> Path | None:
     For TIFF archives the original member is reproduced byte-for-byte, so all the camera metadata
     comes with it. For headerless archives a minimal TIFF is synthesised and labelled as such.
 
-    The frame is chosen as the brightest of a spread of candidates, never frame 0: recordings
-    routinely begin before the illumination is on, and a blank preview would be worse than none.
+    The frame is chosen by a robust high percentile over a spread of candidates, never frame 0:
+    recordings routinely begin before the illumination is on, and a blank preview would be worse
+    than none. A percentile rather than the maximum, so one hot pixel cannot decide the choice.
     """
     import tifffile
 
@@ -122,11 +135,13 @@ def write_preview_frame(wfz_path: str | Path, n_probe: int = 7) -> Path | None:
         if n == 0:
             return None
         picks = np.unique(np.linspace(0, n - 1, min(n_probe, n)).astype(int))
-        best_i, best_max = int(picks[0]), -1
+        # a robust high percentile, not the maximum: a single hot pixel or a saturated
+        # speck would otherwise decide which frame represents the session
+        best_i, best_score = int(picks[0]), -1.0
         for i in picks:
-            m = int(r.frame(int(i)).max())
-            if m > best_max:
-                best_i, best_max = int(i), m
+            score = float(np.percentile(r.frame(int(i)), 99.0))
+            if score > best_score:
+                best_i, best_score = int(i), score
         pixels = r.frame(best_i)
         meta = r.meta
         member_name = r.member_name(best_i)

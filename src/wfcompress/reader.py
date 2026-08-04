@@ -61,10 +61,29 @@ class WfzReader:
         return self.n_frames
 
     # -- reading ---------------------------------------------------------------------------
+    @property
+    def temporal_order_known(self) -> bool:
+        """Whether acquisition order could be recovered from the member names.
+
+        False means ``frame(i)`` falls back to storage order, which for these archives is
+        lexicographic by name (frame-0, frame-1, frame-10, ...) and *not* acquisition order.
+        """
+        return self.footer.order is not None
+
     def frame(self, i: int) -> np.ndarray:
-        """Frame ``i`` as it was acquired, including the original bit shift."""
+        """Acquisition frame ``i``, including the original bit shift.
+
+        Indexed by position in the recording, not position in the archive. The two differ: these
+        tars are written in lexicographic name order, so storage slot 2 is ``frame-10``.
+        """
         if not 0 <= i < self.n_frames:
             raise IndexError(f"frame {i} out of range (0..{self.n_frames - 1})")
+        return self.frame_by_storage_index(self.footer.storage_index(i))
+
+    def frame_by_storage_index(self, i: int) -> np.ndarray:
+        """Frame at position ``i`` in the archive, whatever moment it was acquired."""
+        if not 0 <= i < self.n_frames:
+            raise IndexError(f"storage index {i} out of range (0..{self.n_frames - 1})")
         offset, length, crc = (int(x) for x in self.index[i])
         self._fh.seek(offset)
         code = self._fh.read(length)
@@ -83,9 +102,8 @@ class WfzReader:
         return self.frame(int(key))
 
     def member_name(self, i: int) -> str:
-        """Original tar member name of frame ``i``."""
-        names = self._member_names()
-        return names[i]
+        """Original tar member name of acquisition frame ``i``."""
+        return self._member_names()[self.footer.storage_index(i)]
 
     def _member_names(self) -> list[str]:
         if not hasattr(self, "_names"):

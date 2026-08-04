@@ -29,13 +29,15 @@ def process_one(
     verify_full: bool = True,
     threads: int = 8,
     keep_restored: bool = False,
+    min_age_s: float = codec.DEFAULT_MIN_AGE_S,
 ) -> dict:
     """Compress one session and prove it round-trips. Never deletes anything."""
     t0 = time.perf_counter()
     result: dict = {"tar": str(tar_path), "wfz": str(out_path), "session": session_id(tar_path)}
 
     shape = session_frame_shape(tar_path)
-    meta = codec.compress(tar_path, out_path, shape=shape, threads=threads)
+    meta = codec.compress(tar_path, out_path, shape=shape, threads=threads,
+                          min_age_s=min_age_s)
     result.update(
         ratio=meta["ratio"],
         source_bytes=meta["source_bytes"],
@@ -66,14 +68,34 @@ def process_one(
                 verified_by="stream",
             )
 
+    # only now is byte-identity a fact rather than an expectation
+    meta["byte_identical_verified"] = bool(result.get("byte_identical"))
+
     result["elapsed_s"] = time.perf_counter() - t0
     result["ok"] = True
+    result["output_bytes"] = out_path.stat().st_size
     sidecar.write_readme(out_path, meta)
     sidecar.write_preview_frame(out_path)
     sidecar.write_receipt(out_path, meta, extra={k: result[k] for k in
                                                  ("tar_sha256", "byte_identical")
                                                  if k in result})
     return result
+
+
+def _already_done(rec: dict) -> bool:
+    """Whether a logged success can be trusted without redoing the work.
+
+    A log line saying ``ok`` is not enough on its own: the output may have been moved, truncated
+    or replaced since. For a workflow whose end state is deleting the originals, resume has to
+    re-check that the artifact it is skipping still exists and is the size that was recorded.
+    """
+    if not rec.get("ok"):
+        return False
+    wfz = Path(rec.get("wfz", ""))
+    if not wfz.is_file():
+        return False
+    expected = rec.get("output_bytes")
+    return expected is None or wfz.stat().st_size == expected
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -95,6 +117,10 @@ def main(argv: list[str] | None = None) -> int:
                    help="skip the decompress-and-compare pass (not recommended)")
     p.add_argument("--keep-restored", action="store_true",
                    help="leave the restored tar on disk for inspection")
+    p.add_argument("--min-age-s", type=float, default=codec.DEFAULT_MIN_AGE_S,
+                   help="skip archives modified more recently than this; data arrives here "
+                        "straight off an acquisition machine and can be mid-transfer "
+                        "(default 3600, use 0 to disable)")
     p.add_argument("--log", default="batch_log.jsonl")
     args = p.parse_args(argv)
 
@@ -108,15 +134,22 @@ def main(argv: list[str] | None = None) -> int:
     todo.sort(key=lambda r: -r.bytes if args.largest_first else r.bytes)
 
     log_path = Path(args.log)
-    done = set()
+    done, stale = set(), 0
     if log_path.exists():
         for line in log_path.read_text(encoding="utf-8").splitlines():
             try:
                 rec = json.loads(line)
-                if rec.get("ok"):
-                    done.add(rec["tar"])
             except json.JSONDecodeError:
                 continue
+            if not rec.get("ok"):
+                continue
+            if _already_done(rec):
+                done.add(rec["tar"])
+            else:
+                stale += 1
+                done.discard(rec["tar"])
+    if stale:
+        print(f"{stale} logged successes have a missing or wrong-sized output; redoing those")
     todo = [r for r in todo if r.path not in done]
     if args.limit:
         todo = todo[: args.limit]
@@ -165,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
                 futures[pool.submit(
                     process_one, tar_path, out_path_for(tar_path),
                     not args.no_verify_full, args.threads, args.keep_restored,
+                    args.min_age_s,
                 )] = tar_path
             for n, fut in enumerate(as_completed(futures), 1):
                 tar_path = futures[fut]
@@ -184,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
                     verify_full=not args.no_verify_full,
                     threads=args.threads,
                     keep_restored=args.keep_restored,
+                    min_age_s=args.min_age_s,
                 ), n)
             except Exception as e:  # noqa: BLE001
                 record(failure(tar_path, out_path, e), n)

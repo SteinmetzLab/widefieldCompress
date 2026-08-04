@@ -11,6 +11,10 @@ The footer is an ordinary zip so it can be opened with standard tools. It holds:
 
     meta.json           geometry, bit shift, frame count, provenance, pixel SHA-256
     index.npy           int64 (n_frames, 3): offset, length, crc32 of each codestream
+    order.npy           int64 (n_frames,): temporal index -> storage index. Absent when member
+                        names carry no frame number. These archives are written in lexicographic
+                        name order (frame-0, frame-1, frame-10, ...), so storage position is not
+                        acquisition order
     tarheaders.bin.zst  every original 512-byte tar header, concatenated
     shells.bin.zst      the non-pixel bytes of each member (one copy if they are all identical)
     trailer.bin         the bytes after the last member in the original archive
@@ -37,6 +41,7 @@ PAYLOAD_START = HEADER_LEN
 
 _META = "meta.json"
 _INDEX = "index.npy"
+_ORDER = "order.npy"
 _HEADERS = "tarheaders.bin.zst"
 _SHELLS = "shells.bin.zst"
 _TRAILER = "trailer.bin"
@@ -49,6 +54,13 @@ class Footer:
     tar_headers: bytes
     shells: bytes
     trailer: bytes
+    order: np.ndarray | None = None  # temporal index -> storage index
+
+    def storage_index(self, temporal_i: int) -> int:
+        """Where frame ``temporal_i`` of the recording actually sits in the payload."""
+        if self.order is None:
+            return temporal_i
+        return int(self.order[temporal_i])
 
     def shell_for(self, i: int) -> bytes:
         if self.meta["shells_uniform"]:
@@ -71,6 +83,10 @@ def finalise(fh, footer_offset: int, footer: Footer, zstd_level: int = 10) -> in
         index_buf = io.BytesIO()
         np.save(index_buf, footer.index)
         z.writestr(_INDEX, index_buf.getvalue())
+        if footer.order is not None:
+            order_buf = io.BytesIO()
+            np.save(order_buf, footer.order)
+            z.writestr(_ORDER, order_buf.getvalue())
         z.writestr(_HEADERS, compressor.compress(footer.tar_headers))
         z.writestr(_SHELLS, compressor.compress(footer.shells))
         z.writestr(_TRAILER, footer.trailer)
@@ -88,14 +104,34 @@ def read_footer(path: str | Path, max_blob: int = 1 << 34) -> Footer:
         offset = struct.unpack("<Q", fh.read(8))[0]
         fh.seek(offset)
         z = zipfile.ZipFile(io.BytesIO(fh.read()))
+    meta = json.loads(z.read(_META))
+    check_version(meta, path)
     d = zstd.ZstdDecompressor()
+    order = None
+    if _ORDER in z.namelist():
+        order = np.load(io.BytesIO(z.read(_ORDER)))
     return Footer(
-        meta=json.loads(z.read(_META)),
+        order=order,
+        meta=meta,
         index=np.load(io.BytesIO(z.read(_INDEX))),
         tar_headers=d.decompress(z.read(_HEADERS), max_output_size=max_blob),
         shells=d.decompress(z.read(_SHELLS), max_output_size=max_blob),
         trailer=z.read(_TRAILER),
     )
+
+
+READER_FORMAT_VERSION = 2
+
+
+def check_version(meta: dict, path) -> None:
+    """Refuse a file written by a newer format than this reader understands."""
+    v = meta.get("format_version", 0)
+    if v > READER_FORMAT_VERSION:
+        raise ValueError(
+            f"{path} is format version {v}; this build of wfcompress reads up to "
+            f"{READER_FORMAT_VERSION}. Install a newer version: "
+            + meta.get("provenance", {}).get("repo", "")
+        )
 
 
 def read_meta(path: str | Path) -> dict:
@@ -105,4 +141,6 @@ def read_meta(path: str | Path) -> dict:
             raise ValueError(f"{path} is not a .wfz file")
         offset = struct.unpack("<Q", fh.read(8))[0]
         fh.seek(offset)
-        return json.loads(zipfile.ZipFile(io.BytesIO(fh.read())).read(_META))
+        meta = json.loads(zipfile.ZipFile(io.BytesIO(fh.read())).read(_META))
+    check_version(meta, path)
+    return meta

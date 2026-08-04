@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
@@ -22,6 +23,8 @@ import numpy as np
 import tifffile
 
 from .session import has_svd, session_frame_shape
+
+log = logging.getLogger(__name__)
 
 BLOCK = 512
 
@@ -107,22 +110,38 @@ def classify(name: str) -> str:
     return "other"
 
 
-def find_tars(root: str | Path, pattern: str = "*.tar", max_depth: int = 5) -> list[Path]:
-    """Depth-limited walk for tar files. Slow over SMB; expect minutes on a big share."""
+def find_tars(
+    root: str | Path, pattern: str = "*.tar", max_depth: int = 5,
+    errors: list[str] | None = None,
+) -> list[Path]:
+    """Depth-limited walk for tar files. Slow over SMB; expect minutes on a big share.
+
+    Directories that cannot be read are appended to ``errors`` rather than skipped silently. A
+    transient SMB or permission failure would otherwise drop a whole subtree while the census
+    still looked complete, which is exactly the kind of gap that makes a deletion decision unsafe.
+    """
     root = Path(root)
     found: list[Path] = []
+    errors = errors if errors is not None else []
 
     def walk(d: Path, depth: int):
         if depth > max_depth:
             return
         try:
-            for entry in d.iterdir():
-                if entry.is_dir():
-                    walk(entry, depth + 1)
-                elif entry.match(pattern):
-                    found.append(entry)
-        except OSError:
+            entries = list(d.iterdir())
+        except OSError as e:
+            errors.append(f"{d}: {type(e).__name__}: {e}")
             return
+        for entry in entries:
+            try:
+                is_dir = entry.is_dir()
+            except OSError as e:
+                errors.append(f"{entry}: {type(e).__name__}: {e}")
+                continue
+            if is_dir:
+                walk(entry, depth + 1)
+            elif entry.match(pattern):
+                found.append(entry)
 
     walk(root, 0)
     return found
@@ -182,13 +201,25 @@ def probe(path: str | Path, server: str = "", sample_frames: int = 3) -> TarReco
     return rec
 
 
-def scan(roots: dict[str, Path] | None = None, workers: int = 16) -> Census:
-    """Full inventory across the given roots."""
+def scan(roots: dict[str, Path] | None = None, workers: int = 16,
+         strict: bool = True) -> Census:
+    """Full inventory across the given roots.
+
+    ``strict`` raises when any directory could not be traversed. Leave it on for anything feeding
+    a deletion decision: a census that quietly omits a subtree is worse than no census.
+    """
     roots = roots or DEFAULT_ROOTS
     jobs: list[tuple[str, Path]] = []
+    errors: list[str] = []
     for server, root in roots.items():
-        for p in find_tars(root):
+        for p in find_tars(root, errors=errors):
             jobs.append((server, p))
+    if errors:
+        msg = f"{len(errors)} director{'y' if len(errors) == 1 else 'ies'} could not be read"
+        detail = "\n  ".join(errors[:20])
+        if strict:
+            raise OSError(f"{msg}:\n  {detail}")
+        log.warning("%s; the census is incomplete:\n  %s", msg, detail)
     with ThreadPoolExecutor(workers) as ex:
         records = list(ex.map(lambda j: probe(j[1], j[0]), jobs))
     return Census(records)

@@ -55,3 +55,24 @@ def test_core_is_importable_without_the_lab_layer():
 
     assert hasattr(wfcompress, "compress")
     assert hasattr(wfcompress, "WfzReader")
+
+
+def test_every_module_imports():
+    """Import each module, including the lab layer.
+
+    The lab layer has no unit tests of its own because it only makes sense against the lab share,
+    so nothing exercised it -- and a syntax error in `census.py` shipped and survived a green test
+    run. Importing is a low bar, but it is the bar that was missing.
+    """
+    import importlib
+    import pkgutil
+
+    import wfcompress
+
+    failures = []
+    for mod in pkgutil.walk_packages(wfcompress.__path__, prefix="wfcompress."):
+        try:
+            importlib.import_module(mod.name)
+        except Exception as e:  # noqa: BLE001 - report all of them, not just the first
+            failures.append(f"{mod.name}: {type(e).__name__}: {e}")
+    assert not failures, "modules failed to import:\n  " + "\n  ".join(failures)

@@ -28,7 +28,7 @@ def make_frames(n=12, rows=40, cols=48, shift=0, seed=0):
     out = []
     for i in range(n):
         f = base + i + rng.integers(0, 12, size=(rows, cols))
-        out.append((np.clip(f, 0, 4095).astype(np.uint16) << shift))
+        out.append(np.clip(f, 0, 4095).astype(np.uint16) << shift)
     return np.stack(out)
 
 
@@ -158,7 +158,7 @@ def test_metadata_is_self_describing(tmp_path):
 def _tar_with_varying_headers(path, frames, descriptions):
     """TIFFs whose metadata differs per frame, so the shells are not all identical."""
     with tarfile.open(path, "w") as tf:
-        for i, (f, desc) in enumerate(zip(frames, descriptions)):
+        for i, (f, desc) in enumerate(zip(frames, descriptions, strict=True)):
             buf = io.BytesIO()
             tifffile.imwrite(buf, f, photometric="minisblack", description=desc)
             data = buf.getvalue()
@@ -183,12 +183,18 @@ def test_varying_but_equal_length_shells_roundtrip(tmp_path):
 
 
 def test_unequal_length_shells_are_refused_not_corrupted(tmp_path):
-    """Different header sizes would break the reader's fixed-stride slicing, so refuse."""
+    """Different header sizes would break the reader's fixed-stride slicing, so refuse -- and do
+    it in preflight, before any codestream has been written."""
+    from wfcompress.codec import UnsupportedArchive
+
     frames = make_frames(n=8)
     src = tmp_path / "in.tar"
+    dst = tmp_path / "a.wfz"
     _tar_with_varying_headers(src, frames, ["x" * (10 + 7 * i) for i in range(len(frames))])
-    with pytest.raises(NotImplementedError, match="header sizes"):
-        compress(src, tmp_path / "a.wfz")
+    with pytest.raises(UnsupportedArchive, match="different sizes"):
+        compress(src, dst)
+    assert not dst.exists(), "nothing should have been written"
+    assert not list(tmp_path.glob("*.partial-*")), "no temporary file left behind"
 
 
 def test_uniform_shells_are_stored_once(tmp_path):
@@ -245,7 +251,9 @@ def test_verify_catches_a_corrupted_payload(tmp_path):
     blob = bytearray(wfz.read_bytes())
     blob[300] ^= 0xFF
     wfz.write_bytes(bytes(blob))
-    with pytest.raises(Exception):
+    from wfcompress.codec import LosslessCheckFailed
+
+    with pytest.raises(LosslessCheckFailed, match="CRC"):
         verify(wfz)
 
 
@@ -258,8 +266,12 @@ def test_corrupted_codestream_is_caught(tmp_path):
     blob = bytearray(wfz.read_bytes())
     blob[200] ^= 0xFF  # flip a bit inside the first codestream
     wfz.write_bytes(bytes(blob))
-    with pytest.raises(Exception):
-        decompress(wfz, tmp_path / "out.tar")
+    from wfcompress.codec import LosslessCheckFailed
+
+    out = tmp_path / "out.tar"
+    with pytest.raises(LosslessCheckFailed, match="CRC"):
+        decompress(wfz, out)
+    assert not out.exists(), "a failed decompression must not leave an output file"
 
 
 def test_preview_frame_is_the_original_member_for_tiff_archives(tmp_path):
