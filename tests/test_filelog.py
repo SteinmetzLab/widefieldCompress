@@ -146,3 +146,18 @@ def test_summarise_counts_events(tmp_path):
     s = filelog.summarise(log)
     assert s["create"]["n"] >= 1
     assert s["create"]["bytes"] > 0
+
+
+def test_summary_does_not_count_temp_renames_as_deletions(tmp_path):
+    """A temporary being renamed into place is a `delete` of its path. Summing those alongside
+    real deletions would report tens of GB removed on a run that removed nothing."""
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, make_frames())
+    log = filelog.ensure(tmp_path / "fileEditLog.csv")
+    compress(src, tmp_path / "a.wfz", file_log=str(log))
+
+    s = filelog.summarise(log)
+    assert s.get("delete", {"bytes": 0})["bytes"] == 0, "nothing persistent was deleted"
+    assert s["transient"]["n"] == 2, "the temp create/delete pair is still recorded"
+    assert filelog.is_transient("x/widefield.wfz.partial-123")
+    assert not filelog.is_transient("x/widefield.wfz")

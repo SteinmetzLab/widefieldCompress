@@ -78,13 +78,33 @@ def record_write(log_path, path, existed_before: bool, note: str = "") -> None:
     record(log_path, "modify" if existed_before else "create", path, note=note)
 
 
+TRANSIENT_MARKER = ".partial-"
+
+
+def is_transient(path: str) -> bool:
+    """Whether a row refers to one of the temporary files an atomic write creates and renames away.
+
+    These are logged for completeness, but they must not be added up alongside real deletions: a
+    temporary being renamed into place is recorded as a `delete` of its path, and summing those
+    would report tens of GB "deleted" on a run that removed nothing at all.
+    """
+    return TRANSIENT_MARKER in path
+
+
 def summarise(log_path: str | Path) -> dict:
-    """Counts and total bytes per event, for a quick look over a finished run."""
+    """Counts and total bytes per event, splitting persistent files from temporaries.
+
+    Returns ``{event: {"n", "bytes"}}`` for persistent files plus a single ``"transient"`` entry
+    covering the temporary-file rows, so a reader is not misled about what was actually removed.
+    """
     out: dict[str, dict[str, int]] = {}
     with Path(log_path).open(encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
-            e = out.setdefault(row["event"], {"n": 0, "bytes": 0})
+            key = "transient" if is_transient(row["path"]) else row["event"]
+            e = out.setdefault(key, {"n": 0, "bytes": 0})
             e["n"] += 1
+            if key == "transient":
+                continue
             try:
                 e["bytes"] += int(row["size_bytes"] or 0)
             except ValueError:

@@ -1,0 +1,14 @@
+server,path,bytes,kind,member_bytes,est_frames,rows,cols,shift,payload_bits,maxval,has_svd,first_member,error
+Y,Y:\Subjects\test\2026-02-17\1\widefield.tar,1189092864,basler-tiff,631826,1879,560,560,4,12,48112,True,1/Basler_acA2440-75um__23040354__20260217_132209692_0001.tiff,
+Y,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.tar,1570225664,basler-tiff,528530,2966,512,512,4,12,65520,True,1/Basler_acA2440-75um__23040354__20210717_183300025_0001.tiff,
+Y,Y:\Subjects\AL_0033\2025-03-17\1\widefield.tar,1610082816,frame-N,627200,2565,560,560,0,12,4095,True,1/frame-0,
+Y,Y:\Subjects\AL_0048\2026-06-11\4\widefield.tar,3331896832,frame-N,627200,5308,560,560,0,11,1793,True,4/frame-0,
+Y,Y:\Subjects\test\2025-11-05\1\1.tar,10444501504,frame-N,627200,16639,0,0,-1,0,0,False,1/frame-0,headerless frames and no meanImage.npy for geometry
+Y,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.tar,20250793472,basler-tiff,581778,34756,512,564,4,12,49376,True,1/Basler_acA2440-75um__23040354__20200725_165800950_0001.tiff,
+Y,Y:\Subjects\SM_0001\2020-09-03\1\widefield.tar,27998839296,basler-tiff,604506,46265,521,576,4,12,65520,True,1/Basler_acA2440-75um__23040354__20200903_202833496_0001.tiff,
+Y,Y:\Subjects\AL_0023\2023-05-15\5\widefield.tar,31639918080,basler-tiff,394946,79944,350,560,4,11,27104,True,5/Basler_acA2440-75um__23040354__20230515_142728247_0001.tiff,
+Y,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.tar,31907714048,basler-tiff,496538,64181,481,512,4,12,65520,True,1/Basler_acA2440-75um__23040354__20200729_120733341_0001.tiff,
+Y,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.tar,430101106176,basler-tiff,631826,679645,560,560,4,12,65520,True,2/Basler_acA2440-75um__23040354__20211127_155155008_0001.tiff,
+Y,Y:\Subjects\AL_0033\2025-02-24\3\3.tar,17471109632,frame-N,627200,27833,0,0,-1,0,0,False,3/frame-0,headerless frames and no meanImage.npy for geometry
+Y,Y:\Subjects\test\2025-11-04\1.tar,5484321280,frame-N,627200,8737,0,0,-1,0,0,False,1/frame-0,headerless frames and no meanImage.npy for geometry
+Y,Y:\Subjects\default\2025-03-05\3\widefield.tar,5194318336,frame-N,627200,8275,0,0,-1,0,0,False,1/frame-0,headerless frames and no meanImage.npy for geometry

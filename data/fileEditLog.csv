@@ -1,0 +1,73 @@
+timestamp_utc,event,path,size_bytes,host,pid,note
+2026-08-04T05:47:34+00:00,create,Y:\Subjects\test\2026-02-17\1\widefield.wfz.partial-30796,0,DESKTOP-KH3D2OM,30796,temporary output
+2026-08-04T05:47:34+00:00,create,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz.partial-5164,0,DESKTOP-KH3D2OM,5164,temporary output
+2026-08-04T05:47:35+00:00,create,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz.partial-41396,0,DESKTOP-KH3D2OM,41396,temporary output
+2026-08-04T05:47:41+00:00,create,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz.partial-20156,0,DESKTOP-KH3D2OM,20156,temporary output
+2026-08-04T05:48:19+00:00,delete,Y:\Subjects\test\2026-02-17\1\widefield.wfz.partial-30796,505364720,DESKTOP-KH3D2OM,30796,renamed into place
+2026-08-04T05:48:19+00:00,modify,Y:\Subjects\test\2026-02-17\1\widefield.wfz,505364720,DESKTOP-KH3D2OM,30796,
+2026-08-04T05:48:34+00:00,delete,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz.partial-5164,682336506,DESKTOP-KH3D2OM,5164,renamed into place
+2026-08-04T05:48:34+00:00,modify,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz,682336506,DESKTOP-KH3D2OM,5164,
+2026-08-04T05:48:39+00:00,delete,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz.partial-41396,721753613,DESKTOP-KH3D2OM,41396,renamed into place
+2026-08-04T05:48:39+00:00,modify,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz,721753613,DESKTOP-KH3D2OM,41396,
+2026-08-04T05:48:45+00:00,modify,Y:\Subjects\test\2026-02-17\1\widefield.wfz.README.md,1781,DESKTOP-KH3D2OM,30796,
+2026-08-04T05:48:45+00:00,create,Y:\Subjects\test\2026-02-17\1\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,30796,
+2026-08-04T05:48:45+00:00,modify,Y:\Subjects\test\2026-02-17\1\widefield.wfz.receipt.json,1388,DESKTOP-KH3D2OM,30796,
+2026-08-04T05:48:56+00:00,create,Y:\Subjects\test\2025-11-04\1.wfz.partial-31552,0,DESKTOP-KH3D2OM,31552,temporary output
+2026-08-04T05:49:06+00:00,modify,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz.README.md,1754,DESKTOP-KH3D2OM,5164,
+2026-08-04T05:49:06+00:00,create,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,5164,
+2026-08-04T05:49:06+00:00,modify,Y:\Subjects\AL_0033\2025-03-17\1\widefield.wfz.receipt.json,1386,DESKTOP-KH3D2OM,5164,
+2026-08-04T05:49:12+00:00,create,Y:\Subjects\default\2025-03-05\3\widefield.wfz.partial-10664,0,DESKTOP-KH3D2OM,10664,temporary output
+2026-08-04T05:49:12+00:00,modify,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz.README.md,1781,DESKTOP-KH3D2OM,41396,
+2026-08-04T05:49:13+00:00,create,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz.frame.tif,528530,DESKTOP-KH3D2OM,41396,
+2026-08-04T05:49:13+00:00,modify,Y:\Subjects\ZYE_0035\2021-07-17\1\widefield.wfz.receipt.json,1388,DESKTOP-KH3D2OM,41396,
+2026-08-04T05:49:35+00:00,delete,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz.partial-20156,1276669694,DESKTOP-KH3D2OM,20156,renamed into place
+2026-08-04T05:49:35+00:00,modify,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz,1276669694,DESKTOP-KH3D2OM,20156,
+2026-08-04T05:50:32+00:00,modify,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz.README.md,1756,DESKTOP-KH3D2OM,20156,
+2026-08-04T05:50:33+00:00,create,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,20156,
+2026-08-04T05:50:33+00:00,modify,Y:\Subjects\AL_0048\2026-06-11\4\widefield.wfz.receipt.json,1386,DESKTOP-KH3D2OM,20156,
+2026-08-04T05:50:36+00:00,create,Y:\Subjects\test\2025-11-05\1\1.wfz.partial-31296,0,DESKTOP-KH3D2OM,31296,temporary output
+2026-08-04T05:51:36+00:00,delete,Y:\Subjects\test\2025-11-04\1.wfz.partial-31552,1441369072,DESKTOP-KH3D2OM,31552,renamed into place
+2026-08-04T05:51:36+00:00,create,Y:\Subjects\test\2025-11-04\1.wfz,1441369072,DESKTOP-KH3D2OM,31552,
+2026-08-04T05:51:48+00:00,delete,Y:\Subjects\default\2025-03-05\3\widefield.wfz.partial-10664,1860513193,DESKTOP-KH3D2OM,10664,renamed into place
+2026-08-04T05:51:48+00:00,create,Y:\Subjects\default\2025-03-05\3\widefield.wfz,1860513193,DESKTOP-KH3D2OM,10664,
+2026-08-04T05:52:04+00:00,create,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz.partial-8784,0,DESKTOP-KH3D2OM,8784,temporary output
+2026-08-04T05:53:05+00:00,create,Y:\Subjects\test\2025-11-04\1.wfz.README.md,1699,DESKTOP-KH3D2OM,31552,
+2026-08-04T05:53:05+00:00,create,Y:\Subjects\test\2025-11-04\1.wfz.frame.tif,627776,DESKTOP-KH3D2OM,31552,
+2026-08-04T05:53:05+00:00,create,Y:\Subjects\test\2025-11-04\1.wfz.receipt.json,1377,DESKTOP-KH3D2OM,31552,
+2026-08-04T05:53:19+00:00,create,Y:\Subjects\default\2025-03-05\3\widefield.wfz.README.md,1755,DESKTOP-KH3D2OM,10664,
+2026-08-04T05:53:19+00:00,create,Y:\Subjects\default\2025-03-05\3\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,10664,
+2026-08-04T05:53:19+00:00,create,Y:\Subjects\default\2025-03-05\3\widefield.wfz.receipt.json,1384,DESKTOP-KH3D2OM,10664,
+2026-08-04T05:54:27+00:00,create,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz.partial-30796,0,DESKTOP-KH3D2OM,30796,temporary output
+2026-08-04T05:56:06+00:00,delete,Y:\Subjects\test\2025-11-05\1\1.wfz.partial-31296,4193621602,DESKTOP-KH3D2OM,31296,renamed into place
+2026-08-04T05:56:06+00:00,create,Y:\Subjects\test\2025-11-05\1\1.wfz,4193621602,DESKTOP-KH3D2OM,31296,
+2026-08-04T05:56:24+00:00,create,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz.partial-5164,0,DESKTOP-KH3D2OM,5164,temporary output
+2026-08-04T05:57:43+00:00,create,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz.partial-41396,0,DESKTOP-KH3D2OM,41396,temporary output
+2026-08-04T05:59:12+00:00,create,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.partial-20156,0,DESKTOP-KH3D2OM,20156,temporary output
+2026-08-04T05:59:19+00:00,create,Y:\Subjects\test\2025-11-05\1\1.wfz.README.md,1703,DESKTOP-KH3D2OM,31296,
+2026-08-04T05:59:19+00:00,create,Y:\Subjects\test\2025-11-05\1\1.wfz.frame.tif,627760,DESKTOP-KH3D2OM,31296,
+2026-08-04T05:59:19+00:00,create,Y:\Subjects\test\2025-11-05\1\1.wfz.receipt.json,1382,DESKTOP-KH3D2OM,31296,
+2026-08-04T06:02:03+00:00,delete,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz.partial-8784,6001539791,DESKTOP-KH3D2OM,8784,renamed into place
+2026-08-04T06:02:03+00:00,create,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz,6001539791,DESKTOP-KH3D2OM,8784,
+2026-08-04T06:07:29+00:00,create,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz.README.md,1703,DESKTOP-KH3D2OM,8784,
+2026-08-04T06:07:29+00:00,create,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz.frame.tif,627776,DESKTOP-KH3D2OM,8784,
+2026-08-04T06:07:29+00:00,create,Y:\Subjects\AL_0033\2025-02-24\3\3.wfz.receipt.json,1379,DESKTOP-KH3D2OM,8784,
+2026-08-04T06:07:49+00:00,delete,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz.partial-30796,8870590325,DESKTOP-KH3D2OM,30796,renamed into place
+2026-08-04T06:07:49+00:00,modify,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz,8870590325,DESKTOP-KH3D2OM,30796,
+2026-08-04T06:14:09+00:00,modify,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz.README.md,1786,DESKTOP-KH3D2OM,30796,
+2026-08-04T06:14:10+00:00,create,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz.frame.tif,581778,DESKTOP-KH3D2OM,30796,
+2026-08-04T06:14:10+00:00,modify,Y:\Subjects\ZYE_0008\2020-07-25\1\widefield.wfz.receipt.json,1394,DESKTOP-KH3D2OM,30796,
+2026-08-04T06:15:07+00:00,delete,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz.partial-5164,12918583663,DESKTOP-KH3D2OM,5164,renamed into place
+2026-08-04T06:15:07+00:00,modify,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz,12918583663,DESKTOP-KH3D2OM,5164,
+2026-08-04T06:18:21+00:00,delete,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz.partial-41396,13216733344,DESKTOP-KH3D2OM,41396,renamed into place
+2026-08-04T06:18:22+00:00,modify,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz,13216733344,DESKTOP-KH3D2OM,41396,
+2026-08-04T06:19:43+00:00,delete,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.partial-20156,14704817866,DESKTOP-KH3D2OM,20156,renamed into place
+2026-08-04T06:19:43+00:00,modify,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz,14704817866,DESKTOP-KH3D2OM,20156,
+2026-08-04T06:22:59+00:00,modify,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz.README.md,1787,DESKTOP-KH3D2OM,5164,
+2026-08-04T06:23:00+00:00,create,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz.frame.tif,604506,DESKTOP-KH3D2OM,5164,
+2026-08-04T06:23:00+00:00,modify,Y:\Subjects\SM_0001\2020-09-03\1\widefield.wfz.receipt.json,1394,DESKTOP-KH3D2OM,5164,
+2026-08-04T06:26:23+00:00,modify,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz.README.md,1787,DESKTOP-KH3D2OM,41396,
+2026-08-04T06:26:23+00:00,create,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz.frame.tif,394946,DESKTOP-KH3D2OM,41396,
+2026-08-04T06:26:23+00:00,modify,Y:\Subjects\AL_0023\2023-05-15\5\widefield.wfz.receipt.json,1396,DESKTOP-KH3D2OM,41396,
+2026-08-04T06:27:57+00:00,modify,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.README.md,1787,DESKTOP-KH3D2OM,20156,
+2026-08-04T06:27:58+00:00,create,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.frame.tif,496538,DESKTOP-KH3D2OM,20156,
+2026-08-04T06:27:58+00:00,modify,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.receipt.json,1395,DESKTOP-KH3D2OM,20156,
