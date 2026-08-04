@@ -20,8 +20,22 @@ def _progress(label: str, px_per_frame: int):
     return report
 
 
+def _resolve_shape(args) -> tuple[int, int] | None:
+    """--shape wins; otherwise take the geometry from a reference array if one was given."""
+    if args.shape:
+        return (int(args.shape[0]), int(args.shape[1]))
+    if args.shape_from:
+        import numpy as np
+
+        ref = np.load(args.shape_from, mmap_mode="r")
+        if ref.ndim != 2:
+            raise SystemExit(f"{args.shape_from} is {ref.ndim}-D; need a 2-D reference image")
+        return (int(ref.shape[0]), int(ref.shape[1]))
+    return None
+
+
 def cmd_compress(args) -> int:
-    shape = tuple(args.shape) if args.shape else None
+    shape = _resolve_shape(args)
     meta = codec.compress(
         args.src,
         args.dst,
@@ -110,6 +124,12 @@ def main(argv: list[str] | None = None) -> int:
         nargs=2,
         metavar=("ROWS", "COLS"),
         help="frame geometry; required only for headerless raw archives",
+    )
+    c.add_argument(
+        "--shape-from",
+        metavar="REF.npy",
+        help="take the frame geometry from a 2-D .npy (e.g. the session's meanImage.npy) "
+             "instead of spelling it out with --shape",
     )
     c.add_argument("--no-sidecar", action="store_true", help="skip the README/receipt files")
     c.set_defaults(func=cmd_compress)

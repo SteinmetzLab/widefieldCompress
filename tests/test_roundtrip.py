@@ -312,3 +312,32 @@ def test_preview_frame_is_synthesised_for_headerless_archives(tmp_path):
         page = tf.pages[0]
         assert page.shape == (32, 50)
         assert "Synthesised preview" in page.tags["ImageDescription"].value
+
+
+def test_shape_from_reference_array(tmp_path):
+    """Geometry can come from a reference image rather than being typed out by hand."""
+    from wfcompress.cli import main
+
+    frames = make_frames(n=6, rows=32, cols=50)
+    src = tmp_path / "in.tar"
+    write_raw_tar(src, frames)
+    ref = tmp_path / "meanImage.npy"
+    np.save(ref, frames.mean(axis=0))
+
+    wfz = tmp_path / "a.wfz"
+    assert main(["--quiet", "compress", str(src), str(wfz),
+                 "--shape-from", str(ref), "--no-sidecar"]) == 0
+    out = tmp_path / "out.tar"
+    decompress(wfz, out)
+    assert sha256_file(src) == sha256_file(out)
+
+
+def test_shape_from_rejects_a_non_2d_reference(tmp_path):
+    from wfcompress.cli import main
+
+    src = tmp_path / "in.tar"
+    write_raw_tar(src, make_frames(n=4, rows=32, cols=50))
+    ref = tmp_path / "bad.npy"
+    np.save(ref, np.zeros((3, 32, 50)))
+    with pytest.raises(SystemExit):
+        main(["--quiet", "compress", str(src), str(tmp_path / "a.wfz"), "--shape-from", str(ref)])
