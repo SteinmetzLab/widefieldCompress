@@ -18,7 +18,7 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-from .. import codec, sidecar
+from .. import codec, filelog, sidecar
 from .census import Census
 from .session import session_frame_shape, session_id
 
@@ -30,14 +30,22 @@ def process_one(
     threads: int = 8,
     keep_restored: bool = False,
     min_age_s: float = codec.DEFAULT_MIN_AGE_S,
+    file_log: str | None = None,
+    assume_shape: tuple[int, int] | None = None,
 ) -> dict:
     """Compress one session and prove it round-trips. Never deletes anything."""
     t0 = time.perf_counter()
     result: dict = {"tar": str(tar_path), "wfz": str(out_path), "session": session_id(tar_path)}
 
     shape = session_frame_shape(tar_path)
+    if shape is None and assume_shape is not None:
+        # Only ever a fallback: a shape resolved from the session folder always wins. Used for the
+        # handful of headerless archives with no meanImage.npy, where the geometry was established
+        # separately (row-coherence analysis plus visual inspection of a rebuilt frame).
+        shape = assume_shape
+        result["shape_assumed"] = list(assume_shape)
     meta = codec.compress(tar_path, out_path, shape=shape, threads=threads,
-                          min_age_s=min_age_s)
+                          min_age_s=min_age_s, file_log=file_log)
     result.update(
         ratio=meta["ratio"],
         source_bytes=meta["source_bytes"],
@@ -53,7 +61,7 @@ def process_one(
             # only when someone wants the rebuilt archive on disk to look at; costs the full
             # uncompressed size in writes plus two passes to hash both files
             restored = out_path.with_suffix(out_path.suffix + ".restored.tar")
-            codec.decompress(out_path, restored, threads=threads)
+            codec.decompress(out_path, restored, threads=threads, file_log=file_log)
             a, b = codec.sha256_file(tar_path), codec.sha256_file(restored)
             result.update(tar_sha256=a, restored_sha256=b, byte_identical=a == b)
             if a != b:
@@ -74,11 +82,12 @@ def process_one(
     result["elapsed_s"] = time.perf_counter() - t0
     result["ok"] = True
     result["output_bytes"] = out_path.stat().st_size
-    sidecar.write_readme(out_path, meta)
-    sidecar.write_preview_frame(out_path)
-    sidecar.write_receipt(out_path, meta, extra={k: result[k] for k in
-                                                 ("tar_sha256", "byte_identical")
-                                                 if k in result})
+    sidecar.write_readme(out_path, meta, file_log=file_log)
+    sidecar.write_preview_frame(out_path, file_log=file_log)
+    sidecar.write_receipt(out_path, meta,
+                          extra={k: result[k] for k in ("tar_sha256", "byte_identical")
+                                 if k in result},
+                          file_log=file_log)
     return result
 
 
@@ -121,8 +130,19 @@ def main(argv: list[str] | None = None) -> int:
                    help="skip archives modified more recently than this; data arrives here "
                         "straight off an acquisition machine and can be mid-transfer "
                         "(default 3600, use 0 to disable)")
+    p.add_argument("--file-log", default="fileEditLog.csv",
+                   help="append-only CSV recording every file created, replaced or removed on "
+                        "disk, for auditing inside the 60-day recovery window")
+    p.add_argument("--assume-shape", type=int, nargs=2, metavar=("ROWS", "COLS"),
+                   help="frame geometry to use ONLY for archives where it cannot be resolved from "
+                        "the session folder; never overrides a known shape")
     p.add_argument("--log", default="batch_log.jsonl")
     args = p.parse_args(argv)
+
+    file_log = filelog.ensure(args.file_log) if args.file_log else None
+    assume_shape = tuple(args.assume_shape) if args.assume_shape else None
+    if assume_shape:
+        print(f"geometry fallback for unresolvable archives: {assume_shape[0]}x{assume_shape[1]}")
 
     census = Census.read_csv(args.census)
     todo = [
@@ -198,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
                 futures[pool.submit(
                     process_one, tar_path, out_path_for(tar_path),
                     not args.no_verify_full, args.threads, args.keep_restored,
-                    args.min_age_s,
+                    args.min_age_s, str(file_log) if file_log else None, assume_shape,
                 )] = tar_path
             for n, fut in enumerate(as_completed(futures), 1):
                 tar_path = futures[fut]
@@ -219,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
                     threads=args.threads,
                     keep_restored=args.keep_restored,
                     min_age_s=args.min_age_s,
+                    file_log=str(file_log) if file_log else None,
+                    assume_shape=assume_shape,
                 ), n)
             except Exception as e:  # noqa: BLE001
                 record(failure(tar_path, out_path, e), n)

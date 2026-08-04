@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import filelog
 from .provenance import REPO_URL
 
 README_TEMPLATE = """# {stem}.wfz — losslessly compressed camera frames
@@ -79,7 +80,7 @@ _UNVERIFIED = (
 )
 
 
-def write_readme(wfz_path: str | Path, meta: dict) -> Path:
+def write_readme(wfz_path: str | Path, meta: dict, file_log=None) -> Path:
     wfz_path = Path(wfz_path)
     stem = wfz_path.name[: -len(".wfz")] if wfz_path.name.endswith(".wfz") else wfz_path.stem
     prov = meta.get("provenance", {})
@@ -106,11 +107,13 @@ def write_readme(wfz_path: str | Path, meta: dict) -> Path:
         verified_line=_VERIFIED if meta.get("byte_identical_verified") else _UNVERIFIED,
     )
     out = wfz_path.with_name(wfz_path.name + ".README.md")
+    existed = out.exists()
     out.write_text(text, encoding="utf-8")
+    filelog.record_write(file_log, out, existed)
     return out
 
 
-def write_preview_frame(wfz_path: str | Path, n_probe: int = 7) -> Path | None:
+def write_preview_frame(wfz_path: str | Path, n_probe: int = 7, file_log=None) -> Path | None:
     """Write one representative frame beside the .wfz as an ordinary TIFF.
 
     Two reasons this earns its ~0.6 MB. It lets anyone open a frame in Fiji, MATLAB or a browser
@@ -147,6 +150,7 @@ def write_preview_frame(wfz_path: str | Path, n_probe: int = 7) -> Path | None:
         member_name = r.member_name(best_i)
 
     out = wfz_path.with_name(wfz_path.name + ".frame.tif")
+    existed = out.exists()
     if meta["is_tiff"]:
         # rebuild the original member exactly, shell and all
         footer_shell = _shell_for(wfz_path, best_i)
@@ -171,6 +175,7 @@ def write_preview_frame(wfz_path: str | Path, n_probe: int = 7) -> Path | None:
                 f"See {REPO_URL}"
             ),
         )
+    filelog.record_write(file_log, out, existed)
     return out
 
 
@@ -180,10 +185,14 @@ def _shell_for(wfz_path: Path, i: int) -> bytes:
     return container.read_footer(wfz_path).shell_for(i)
 
 
-def write_receipt(wfz_path: str | Path, meta: dict, extra: dict | None = None) -> Path:
+def write_receipt(
+    wfz_path: str | Path, meta: dict, extra: dict | None = None, file_log=None
+) -> Path:
     wfz_path = Path(wfz_path)
     receipt = {k: v for k, v in meta.items() if k != "how_to_decompress"}
     receipt.update(extra or {})
     out = wfz_path.with_name(wfz_path.name + ".receipt.json")
+    existed = out.exists()
     out.write_text(json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8")
+    filelog.record_write(file_log, out, existed)
     return out

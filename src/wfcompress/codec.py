@@ -29,7 +29,7 @@ from pathlib import Path
 import imagecodecs
 import numpy as np
 
-from . import container, frames, tarwalk
+from . import container, filelog, frames, tarwalk
 from .provenance import provenance
 
 DEFAULT_BATCH = 64
@@ -70,22 +70,27 @@ def _assert_distinct(src: Path, dst: Path) -> None:
 
 
 @contextmanager
-def _atomic_output(dst: Path):
+def _atomic_output(dst: Path, file_log=None):
     """Write to a temporary file beside the destination and rename only on success.
 
     A crash, a full disk or a dropped SMB connection must not leave a partial file sitting under
     the final name, where a stale sidecar could vouch for it.
     """
     dst.parent.mkdir(parents=True, exist_ok=True)
+    existed = dst.exists()
     tmp = dst.with_name(f"{dst.name}.partial-{os.getpid()}")
     try:
         with open(tmp, "wb") as fh:
+            filelog.record(file_log, "create", tmp, size_bytes=0, note="temporary output")
             yield fh
             fh.flush()
             os.fsync(fh.fileno())
+        filelog.record(file_log, "delete", tmp, note="renamed into place")
         os.replace(tmp, dst)
+        filelog.record_write(file_log, dst, existed)
     except BaseException:
         if tmp.exists():
+            filelog.record(file_log, "delete", tmp, note="discarded, write failed")
             tmp.unlink()
         raise
 
@@ -201,6 +206,7 @@ def compress(
     batch: int = DEFAULT_BATCH,
     progress: Callable[[int, int, float], None] | None = None,
     min_age_s: float = 0.0,
+    file_log: str | None = None,
 ) -> dict:
     """Compress ``src`` (a tar of frames) to ``dst`` (a .wfz). Returns the metadata dict.
 
@@ -278,7 +284,11 @@ def compress(
     observed_or = 0        # OR over *every* frame, not the 400-frame sample
     spans = _entry_spans(entries, batch)
 
-    with open(src, "rb") as fin, _atomic_output(dst) as fout, ThreadPoolExecutor(threads) as pool:
+    with (
+        open(src, "rb") as fin,
+        _atomic_output(dst, file_log) as fout,
+        ThreadPoolExecutor(threads) as pool,
+    ):
         container.write_header(fout)
         for span_start, span_end, first_member in spans:
             byte_start = entries[span_start].data_offset - tarwalk.BLOCK
@@ -467,6 +477,7 @@ def decompress(
     threads: int = DEFAULT_THREADS,
     batch: int = DEFAULT_BATCH,
     progress: Callable[[int, int, float], None] | None = None,
+    file_log: str | None = None,
 ) -> dict:
     """Rebuild the original tar from a .wfz. Verifies the pixel hash before returning."""
     src, dst = Path(src), Path(dst)
@@ -477,7 +488,7 @@ def decompress(
     # Every byte passes through here anyway, so hashing costs almost nothing and turns
     # decompression into its own proof rather than something a separate check has to confirm.
     h = hashlib.sha256()
-    with _atomic_output(dst) as fout:
+    with _atomic_output(dst, file_log) as fout:
         for chunk in iter_tar_bytes(src, threads, batch, progress):
             h.update(chunk)
             fout.write(chunk)
@@ -485,6 +496,7 @@ def decompress(
     digest = h.hexdigest()
     expected = meta.get("source_tar_sha256")
     if expected is not None and digest != expected:
+        filelog.record(file_log, "delete", dst, note="rebuilt archive failed its hash")
         dst.unlink(missing_ok=True)
         raise LosslessCheckFailed(
             f"{src}: rebuilt archive hashes {digest}, expected {expected}"
