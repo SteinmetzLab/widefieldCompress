@@ -71,3 +71,9 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-04T06:27:57+00:00,modify,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.README.md,1787,DESKTOP-KH3D2OM,20156,
 2026-08-04T06:27:58+00:00,create,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.frame.tif,496538,DESKTOP-KH3D2OM,20156,
 2026-08-04T06:27:58+00:00,modify,Y:\Subjects\ZYE_0007\2020-07-29\1\widefield.wfz.receipt.json,1395,DESKTOP-KH3D2OM,20156,
+2026-08-04T06:38:25+00:00,create,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz.partial-51152,0,DESKTOP-KH3D2OM,51152,temporary output
+2026-08-04T08:44:35+00:00,delete,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz.partial-51152,192366063076,DESKTOP-KH3D2OM,51152,renamed into place
+2026-08-04T08:44:35+00:00,create,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz,192366063076,DESKTOP-KH3D2OM,51152,
+2026-08-04T09:57:52+00:00,create,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz.README.md,1791,DESKTOP-KH3D2OM,51152,
+2026-08-04T09:57:55+00:00,create,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,51152,
+2026-08-04T09:57:55+00:00,create,Y:\Subjects\ZYE_0046\2021-11-27\2\widefield.wfz.receipt.json,1398,DESKTOP-KH3D2OM,51152,

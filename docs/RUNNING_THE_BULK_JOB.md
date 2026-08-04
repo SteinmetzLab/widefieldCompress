@@ -37,11 +37,36 @@ reading and writing the share:
 | 8 | 2 | 16 | 83.3 | 3.01x |
 | **8** | **4** | **32** | **86.7** | **3.13x** |
 
-Returns flatten past 8 jobs. Going faster from here would mean cutting the per-frame numpy passes
+Returns flatten past 8 jobs. `--jobs` costs memory roughly linearly - about 1.2 GB per worker on
+the largest archives - so 8 jobs is ~9 GB, comfortable on 64 GB. Going faster from here would mean cutting the per-frame numpy passes
 in the codec, which is not worth it at this scale.
 
-**Expected wall clock for Y: (120.7 TB): ~16 days continuous** at 86.7 MB/s, versus ~50 days at the
-old single-process default. Spread over nights and weekends, budget a couple of months.
+### What the staged pilot actually did
+
+588.2 GB over 13 archives, every one rebuilt byte-for-byte, in two stages:
+
+| stage | arrangement | size | time | MB/s |
+|---|---|---|---|---|
+| A: 12 sessions, 1-32 GB | 8 jobs x 4 threads | 158.1 GB | 0.67 h | 65.1 |
+| B: the 430 GB archive alone | 1 job x 16 threads | 430.1 GB | 3.50 h | 34.1 |
+
+**Expected wall clock for Y: (120.68 TB): 16-22 days continuous.** The spread is real and worth
+understanding before you plan around it:
+
+- **16.1 days** at the 86.7 MB/s the sweep measured with a full queue of 8 concurrent sessions.
+- **21.5 days** at stage A's 65.1 MB/s. That figure is depressed by a tail effect, not by anything
+  fundamental: with only 12 items ranging 1-32 GB, the four largest ran nearly the whole window
+  while the rest had finished, so for most of the run fewer than 8 workers were busy. A
+  1,120-session queue stays full, so the real rate should sit near the sweep.
+- **41 days** if it were run one session at a time, which is the floor, not a plan.
+
+**Archive size does not cost throughput.** The 430 GB archive ran at 34.1 MB/s on 16 threads
+against 37.8 MB/s measured for a 3 GB one at the same thread count, and its peak memory was
+**1.15 GB** on a 64 GB machine - the largest session in the corpus, 679,645 frames. Shells are
+identical across frames and get interned to one copy, so the multi-GB memory growth that looked
+possible does not happen.
+
+Spread over nights and weekends, budget one to two months of calendar time.
 
 ## Being a good neighbour
 
@@ -64,16 +89,27 @@ start /low /b python -m wfcompress.lab.batch --census census.csv --jobs 8 --thre
 Re-run the census first — it is a snapshot and new sessions land continuously:
 
 ```bash
-python -c "from wfcompress.lab.census import scan; scan().write_csv('census.csv')"
+python scripts/regenerate_census.py      # writes data/census_Y.csv
 ```
+
+The current one is committed as `data/census_Y.csv`: 1,126 tars, 1,120 widefield, 120.68 TB, and
+18 archives (1.68 TB) whose geometry cannot be resolved from the session folder. Those 18 need
+`--assume-shape 560 560`, which only ever applies where geometry is otherwise unknown - see
+`PLAN.md` section 7a for why 560x560 is the right answer for them.
 
 Then start the batch. The log is JSONL, one line per session, and the driver skips anything already
 marked `ok`, so it is safe to kill and restart at any point.
 
 ```bash
-python -m wfcompress.lab.batch --census census.csv --server Y \
-    --jobs 8 --threads 4 --log bulk.jsonl
+python -m wfcompress.lab.batch --census data/census_Y.csv --server Y \
+    --jobs 8 --threads 4 --assume-shape 560 560 \
+    --log bulk.jsonl --file-log fileEditLog.csv
 ```
+
+`--file-log` appends a row for every file created, replaced or removed, with path, size, UTC
+timestamp and event type. That is the record to audit inside the 60-day window in which the share
+can still recover a deleted version. Temporary files from atomic writes appear in it too; they are
+counted separately in the summary so they cannot be mistaken for real deletions.
 
 Progress:
 

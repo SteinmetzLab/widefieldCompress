@@ -292,8 +292,36 @@ over-samples rare configurations. Weighting by actual corpus composition — 560
 of archives, frame-N 560×560 another 28 %, 512×512 15 % — gives **~2.5**. Older sessions (2020–21)
 compress consistently worse than recent ones (2.17–2.28 vs 2.35–2.88).
 
-**Y: projection: 120.7 TB → ~48 TB, reclaiming ~72 TB** at 2.5; ~53 TB retained at the conservative
-2.26.
+**Y: projection: 120.68 TB → ~53 TB, reclaiming ~68 TB** at the staged pilot's pooled x2.27;
+~48 TB retained if the count-weighted 2.5 holds up across the corpus.
+
+## 6b. Staged pilot — done
+
+588.2 GB over 13 archives, **13/13 byte-identical**, nothing deleted. Log: `data/pilot_stage_a.jsonl`,
+`data/pilot_stage_b.jsonl`; file-by-file audit trail in `data/fileEditLog.csv`.
+
+Chosen to cover what the first pilot had not: the nine sessions from it (so their format-v1 outputs
+were replaced with v2, which carries the acquisition-order map), the **largest archive in the corpus
+at 430 GB / 679,645 frames**, and the four headerless archives whose geometry could not be resolved —
+including the three that hold no signal, compressed rather than deleted.
+
+| | |
+|---|---|
+| pooled | 588.2 GB → 258.8 GB, **x2.27**, 56.0 % saved |
+| ratio range | 2.17 – 3.80 |
+| the 430 GB archive | x2.24, 3.50 h, **1.15 GB peak memory** |
+| geometry from `--assume-shape` | 4 archives, all byte-identical |
+| persistent files deleted | **0** |
+
+Two things this settled. **Peak memory on the largest session is 1.15 GB**, not the multi-GB growth
+the code review thought possible — shells are identical across frames and intern to one copy. And
+the three no-signal archives compress *better* than real data (3.80, 2.91, 2.79), which follows:
+low-amplitude noise carries less absolute entropy.
+
+The pooled x2.27 is dominated by the 430 GB session, which is one old archive rather than a sample
+of the corpus. Count-weighted across geometries the figure was ~2.5. **Plan on 2.3 and be pleased
+if it is better: 120.68 TB → ~53 TB retained, ~68 TB reclaimed**, worth roughly $4,900/year on
+Backblaze once the 60-day version retention expires.
 
 ## 7. Time — measured
 
