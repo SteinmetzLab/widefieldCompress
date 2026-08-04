@@ -178,18 +178,10 @@ def _preflight(src: Path, entries, members) -> None:
             f"(first: {trailing[0].name!r}); reconstruction cannot place them"
         )
 
-    with open(src, "rb") as fh:
-        for e in members:
-            pad = e.padded_size - e.size
-            if not pad:
-                continue
-            fh.seek(e.data_offset + e.size)
-            if fh.read(pad).strip(b"\0"):
-                raise UnsupportedArchive(
-                    f"{src.name}: member {e.name!r} has nonzero alignment padding, which "
-                    f"reconstruction would replace with zeros"
-                )
-
+    # Member padding is checked during the encoding pass instead of here. Doing it in preflight
+    # meant one scattered read per member -- 544,000 network round trips on a 344 GB archive, for
+    # bytes the encoding pass reads anyway. Aborting part-way is safe because the output only
+    # exists as a temporary file until the very end.
     sizes = {e.size for e in members}
     if len(sizes) != 1:
         raise UnsupportedArchive(
@@ -306,6 +298,14 @@ def compress(
                     off = e.data_offset - byte_start
                     jobs.append((i, block[off : off + e.size]))
                     i += 1
+                    # reconstruction synthesises zero padding, so nonzero padding here would not
+                    # round-trip. These bytes are already in hand, so the check is free.
+                    pad = e.padded_size - e.size
+                    if pad and block[off + e.size : off + e.padded_size].strip(b"\0"):
+                        raise UnsupportedArchive(
+                            f"{src.name}: member {e.name!r} has nonzero alignment padding, which "
+                            f"reconstruction would replace with zeros"
+                        )
             for i, code, shell, body, frame_or in sorted(pool.map(encode, jobs),
                                                           key=lambda r: r[0]):
                 observed_or |= frame_or

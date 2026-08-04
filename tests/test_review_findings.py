@@ -145,8 +145,13 @@ def test_nonzero_member_padding_is_refused(tmp_path):
     raw = bytearray(src.read_bytes())
     raw[pad_at] = 0xAB
     src.write_bytes(bytes(raw))
+    dst = tmp_path / "a.wfz"
     with pytest.raises(UnsupportedArchive, match="padding"):
-        compress(src, tmp_path / "a.wfz")
+        compress(src, dst)
+    # this is now detected during the encoding pass rather than in preflight, so the abort happens
+    # after writing has begun; the atomic temporary must still leave nothing behind
+    assert not dst.exists()
+    assert not list(tmp_path.glob("*.partial-*"))
 
 
 # --- P1: acquisition order vs storage order -----------------------------------------------------
@@ -304,3 +309,61 @@ def test_resume_matches_the_same_file_named_two_different_ways(tmp_path):
     f.write_bytes(b"x" * 16)
     assert canonical(f) == canonical(str(f).replace("\\", "/"))
     assert canonical(str(f).upper()) == canonical(str(f).lower())
+
+
+def test_fast_enumeration_matches_the_sequential_walk(tmp_path):
+    """read_entries computes header offsets and fetches them concurrently, because doing it one
+    seek at a time cost 405 s on a 344 GB archive over SMB. It must agree exactly with the
+    sequential walk it replaces, including the leading directory entry.
+    """
+    from wfcompress import tarwalk
+
+    for maker, kw in ((write_tiff_tar, {}), (write_raw_tar, {})):
+        src = tmp_path / f"cmp_{maker.__name__}.tar"
+        maker(src, make_frames(n=9, rows=32, cols=32), **kw)
+        fast = tarwalk.read_entries(src)
+        with open(src, "rb") as fh:
+            slow = list(tarwalk.walk(fh))
+        assert [(e.name, e.size, e.data_offset) for e in fast] == \
+               [(e.name, e.size, e.data_offset) for e in slow]
+        assert [e.header for e in fast] == [e.header for e in slow]
+
+
+def test_fast_enumeration_falls_back_when_members_differ_in_size(tmp_path):
+    """Computed offsets are only valid if every member is the same size. When they are not, the
+    result must still be exactly what the sequential walk produces."""
+    from wfcompress import tarwalk
+
+    src = tmp_path / "uneven.tar"
+    with tarfile.open(src, "w") as tf:
+        for i, n in enumerate((300, 5000, 700, 20000)):
+            data = b"\xab" * n
+            info = tarfile.TarInfo(f"1/m{i}")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    fast = tarwalk.read_entries(src)
+    with open(src, "rb") as fh:
+        slow = list(tarwalk.walk(fh))
+    assert [(e.name, e.size, e.data_offset) for e in fast] == \
+           [(e.name, e.size, e.data_offset) for e in slow]
+
+
+def test_fast_enumeration_sees_a_trailing_directory_entry(tmp_path):
+    """The trailing-entry rejection depends on enumeration reporting it, so the fast path must
+    not simply stop at the last frame."""
+    from wfcompress import tarwalk
+
+    src = tmp_path / "trail.tar"
+    with tarfile.open(src, "w") as tf:
+        for i, f in enumerate(make_frames(n=4, rows=32, cols=32)):
+            data = f.astype("<u2").tobytes()
+            info = tarfile.TarInfo(f"1/frame-{i}")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+        d = tarfile.TarInfo("1/after/")
+        d.type = tarfile.DIRTYPE
+        tf.addfile(d)
+    names = [e.name for e in tarwalk.read_entries(src)]
+    assert names[-1] == "1/after/"
+    with pytest.raises(UnsupportedArchive, match="after the last data member"):
+        compress(src, tmp_path / "a.wfz", shape=(32, 32))
