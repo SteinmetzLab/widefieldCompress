@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import traceback
@@ -91,6 +92,17 @@ def process_one(
     return result
 
 
+def canonical(path: str | Path) -> str:
+    """A comparison key that survives the same file being named different ways.
+
+    The share is reachable both as a mapped drive and as a UNC path, and the census and an older
+    log can disagree about which. ``realpath`` resolves ``Y:\\...`` to
+    ``\\\\sahale...\\data\\...``, so without this a regenerated census silently redoes work that
+    was already finished - on a 16-day run, expensively.
+    """
+    return os.path.normcase(os.path.realpath(str(path)))
+
+
 def _already_done(rec: dict) -> bool:
     """Whether a logged success can be trusted without redoing the work.
 
@@ -164,13 +176,13 @@ def main(argv: list[str] | None = None) -> int:
             if not rec.get("ok"):
                 continue
             if _already_done(rec):
-                done.add(rec["tar"])
+                done.add(canonical(rec["tar"]))
             else:
                 stale += 1
-                done.discard(rec["tar"])
+                done.discard(canonical(rec["tar"]))
     if stale:
         print(f"{stale} logged successes have a missing or wrong-sized output; redoing those")
-    todo = [r for r in todo if r.path not in done]
+    todo = [r for r in todo if canonical(r.path) not in done]
     if args.limit:
         todo = todo[: args.limit]
 

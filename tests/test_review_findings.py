@@ -293,3 +293,14 @@ def test_corrupted_codestream_raises_the_integrity_error_not_just_anything(tmp_p
     with pytest.raises(codec.LosslessCheckFailed, match="CRC"):
         decompress(wfz, out)
     assert not out.exists(), "a failed decompression must not leave an output file"
+
+
+def test_resume_matches_the_same_file_named_two_different_ways(tmp_path):
+    """The share is reachable as both a mapped drive and a UNC path, and the census and an older
+    log can disagree. Comparing raw strings made a regenerated census redo everything."""
+    from wfcompress.lab.batch import canonical
+
+    f = tmp_path / "widefield.tar"
+    f.write_bytes(b"x" * 16)
+    assert canonical(f) == canonical(str(f).replace("\\", "/"))
+    assert canonical(str(f).upper()) == canonical(str(f).lower())
