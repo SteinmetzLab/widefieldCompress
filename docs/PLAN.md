@@ -295,37 +295,42 @@ compress consistently worse than recent ones (2.17–2.28 vs 2.35–2.88).
 **Y: projection: 120.7 TB → ~48 TB, reclaiming ~72 TB** at 2.5; ~53 TB retained at the conservative
 2.26.
 
-## 7. Time
+## 7. Time — measured
 
-Phase 1 established that **verification, not compression, was the bottleneck.** Decompressing to a
-file and hashing both copies cost 4.9× the source bytes in I/O, and SMB tops out near 100 MB/s —
-the Y: corpus would have taken ~70 days from the workstation.
+Two things were wrong in the pre-pilot estimate, and both are now settled.
 
-Verification now streams the reconstruction through SHA-256 and writes nothing, comparing against a
-hash taken from the source during the (now strictly sequential) compress pass. Measured on real
-sessions, with both routes agreeing on byte-identity:
+**Verification, not compression, was the first bottleneck.** Decompressing to a file and hashing
+both copies cost 4.9x the source bytes in I/O. Verification now streams the reconstruction through
+SHA-256 and writes nothing, comparing against a hash taken from the source during the (sequential)
+compress pass. I/O per session: **4.9x -> 1.9x**.
 
-| session | compress | stream verify | old decompress+diff | total |
-|---|---|---|---|---|
-| AL_0048, 3.33 GB | 1.5 min | 0.6 min | 1.3 min | 2.1 vs 2.8 min |
-| ZYE_0008, 20.25 GB | 10.1 min | 3.8 min | 7.1 min | **13.9 vs 24.7 min** |
+**The second bottleneck was our own GIL contention, not the network.** Compressing from local disk
+rather than the share is only **13 % faster** (47.9 vs 41.8 MB/s), and threads inside one session
+scale badly — 4 to 16 threads is 4x the workers for 1.7x the throughput. `jpegls_encode` releases
+the GIL; the eight-or-so full-array numpy operations per frame around it do not.
 
-I/O per session drops from 4.9× to 1.9× the source bytes; ~1.8× faster end to end. Extrapolated,
-Y: goes from ~70 days to **~39 days from the workstation** — still far too slow, which settles the
-question: **the bulk run has to happen on the server.** There it is local disk rather than SMB, with
-more cores; the thread sweep in `RUNNING_ON_THE_SERVER.md` §3 will establish the real rate.
+Since sessions are independent, the fix is process-level rather than codec surgery. Measured on
+8 real sessions (23.02 GB), full workload including verification, reading and writing the share:
 
-Note the throughput during compression (33.5 MB/s at 8 threads, against ~48 MB/s of SMB traffic and
-a theoretical ~136 MB/s of CPU) sits below both ceilings, so there is headroom to find — likely GIL
-contention in the Python glue, or read latency. Worth measuring properly on the server before
-committing to a schedule.
+| jobs | threads | MB/s | vs default |
+|---|---|---|---|
+| 1 | 8 | 27.7 | 1.00x |
+| 1 | 16 | 37.8 | 1.37x |
+| 4 | 8 | 79.7 | 2.88x |
+| 8 | 2 | 83.3 | 3.01x |
+| **8** | **4** | **86.7** | **3.13x** |
 
-JPEG-LS at 30 MB/s encode + 39 MB/s verify-decode per core → ~17 MB/s/core for encode+verify.
+**Y: (120.7 TB) is ~16 days continuous at 86.7 MB/s**, against ~50 days at the old default. At that
+rate SMB traffic is ~165 MB/s — 13 % of the 10 GbE link — so CPU is now the constraint and further
+gains would need fewer numpy passes per frame. Not worth it at this scale.
 
-**Throttle deliberately** either way. A job that saturates the share ruins everyone's day. Cap
-workers and consider nights and weekends.
+**This also reverses the earlier conclusion about the server.** sahale is TrueNAS on FreeBSD 13.1
+with Python 3.9 and no `imagecodecs` wheels, so the bulk run cannot happen there — but it does not
+need to, because moving off the share would only have bought that 13 %. The workstation is the
+host. See `RUNNING_THE_BULK_JOB.md`.
 
----
+**Throttle deliberately.** 32 worker processes will be noticed on the share. Drop `--jobs` during
+working hours; the job is CPU-bound so it costs little.
 
 ## 7a. Geometry coverage on Y: (checked)
 
