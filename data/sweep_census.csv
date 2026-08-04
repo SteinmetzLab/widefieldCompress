@@ -1,0 +1,9 @@
+server,path,bytes,kind,member_bytes,est_frames,rows,cols,shift,payload_bits,maxval,has_svd,first_member,error
+Y,Y:\Subjects\ZYE_0031\2021-04-13\3\widefield.tar,2456454656,basler-tiff,528530,4640,512,512,4,11,18880,True,3/Basler_acA2440-75um__23040354__20210413_144509510_0001.tiff,
+Y,Y:\Subjects\LK_0001\2021-04-13\5\widefield.tar,2524748288,basler-tiff,528530,4769,512,512,4,12,65520,True,5/Basler_acA2440-75um__23040354__20210413_143440539_0001.tiff,
+Y,Y:\Subjects\LK_0001\2021-04-13\3\widefield.tar,2532160000,basler-tiff,528530,4783,512,512,4,12,65520,True,3/Basler_acA2440-75um__23040354__20210413_143203842_0001.tiff,
+Y,Y:\Subjects\ZYE_0031\2021-04-13\5\widefield.tar,2808510976,basler-tiff,528530,5305,512,512,4,12,50624,True,5/Basler_acA2440-75um__23040354__20210413_144709420_0001.tiff,
+Y,Y:\Subjects\LK_0001\2021-04-22\5\widefield.tar,3049391616,basler-tiff,528530,5760,512,512,4,12,65520,True,5/Basler_acA2440-75um__23040354__20210422_145507502_0001.tiff,
+Y,Y:\Subjects\ZYE_0031\2021-04-22\3\widefield.tar,3166920192,basler-tiff,528530,5982,512,512,4,12,43632,True,3/Basler_acA2440-75um__23040354__20210422_150503717_0001.tiff,
+Y,Y:\Subjects\LK_0001\2021-04-22\1\widefield.tar,3229390336,basler-tiff,528530,6100,512,512,4,12,65520,True,1/Basler_acA2440-75um__23040354__20210422_145021199_0001.tiff,
+Y,Y:\Subjects\ZYE_0031\2021-04-22\1\widefield.tar,3251096064,basler-tiff,528530,6141,512,512,4,12,34832,True,1/Basler_acA2440-75um__23040354__20210422_150208131_0001.tiff,

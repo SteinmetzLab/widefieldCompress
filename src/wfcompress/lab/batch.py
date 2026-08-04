@@ -5,7 +5,7 @@ session is verified by a full decompress-and-compare before its receipt records 
 can be interrupted at any point and restarted; completed sessions are skipped.
 
     python -m wfcompress.lab.batch --census tar_census.csv --limit 10
-    python -m wfcompress.lab.batch --census tar_census.csv --out-dir Y:/temp/pilot --verify-full
+    python -m wfcompress.lab.batch --census tar_census.csv --jobs 6 --threads 8
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import json
 import sys
 import time
 import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from .. import codec, sidecar
@@ -85,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-gb", type=float, default=1e9)
     p.add_argument("--kind", action="append", help="restrict to a flavour; repeatable")
     p.add_argument("--largest-first", action="store_true")
-    p.add_argument("--threads", type=int, default=8)
+    p.add_argument("--threads", type=int, default=8, help="threads within one session")
+    p.add_argument("--jobs", type=int, default=1,
+                   help="sessions to process concurrently, in separate processes. Worth ~2x over "
+                        "spending the same cores on --threads, because the numpy work around the "
+                        "codec holds the GIL")
     p.add_argument("--no-verify-full", action="store_true",
                    help="skip the decompress-and-compare pass (not recommended)")
     p.add_argument("--keep-restored", action="store_true",
@@ -119,38 +124,74 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{len(todo)} sessions to process ({sum(r.bytes for r in todo)/1e12:.2f} TB), "
           f"{len(done)} already done")
 
-    ok = 0
-    for n, rec in enumerate(todo, 1):
-        tar_path = Path(rec.path)
+    def out_path_for(tar_path: Path) -> Path:
         out_dir = Path(args.out_dir) if args.out_dir else tar_path.parent
         stem = tar_path.stem
         if args.out_dir:
             stem = f"{session_id(tar_path).replace('/', '_')}_{stem}"
-        out_path = out_dir / f"{stem}.wfz"
-        print(f"\n[{n}/{len(todo)}] {session_id(tar_path)}  {rec.bytes/1e9:.1f} GB  "
-              f"{rec.kind}  -> {out_path.name}")
-        try:
-            result = process_one(
-                tar_path, out_path,
-                verify_full=not args.no_verify_full,
-                threads=args.threads,
-                keep_restored=args.keep_restored,
-            )
-            ok += 1
-            print(f"    x{result['ratio']:.2f}  shift={result['shift']}  "
-                  f"{'byte-identical' if result.get('byte_identical') else 'pixels verified'}  "
-                  f"{result['elapsed_s']/60:.1f} min")
-        except Exception as e:  # noqa: BLE001 - one bad session must not stop the run
-            result = {
-                "tar": str(tar_path), "wfz": str(out_path), "session": session_id(tar_path),
-                "ok": False, "error": f"{type(e).__name__}: {e}",
-                "traceback": traceback.format_exc(),
-            }
-            print(f"    FAILED: {result['error']}")
+        return out_dir / f"{stem}.wfz"
+
+    def failure(tar_path: Path, out_path: Path, e: BaseException) -> dict:
+        return {
+            "tar": str(tar_path), "wfz": str(out_path), "session": session_id(tar_path),
+            "ok": False, "error": f"{type(e).__name__}: {e}",
+            "traceback": "".join(traceback.format_exception(type(e), e, e.__traceback__)),
+        }
+
+    def record(result: dict, n: int) -> bool:
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(result) + "\n")
+        tag = f"[{n}/{len(todo)}] {result['session']}"
+        if result.get("ok"):
+            print(f"{tag}  x{result['ratio']:.2f}  shift={result['shift']}  "
+                  f"{'byte-identical' if result.get('byte_identical') else 'pixels verified'}  "
+                  f"{result['elapsed_s']/60:.1f} min", flush=True)
+        else:
+            print(f"{tag}  FAILED: {result['error']}", flush=True)
+        return bool(result.get("ok"))
 
-    print(f"\n{ok}/{len(todo)} succeeded; log in {log_path}")
+    t_start = time.perf_counter()
+    ok = 0
+
+    if args.jobs > 1:
+        # Sessions are independent, and threads inside one session scale poorly because the numpy
+        # work around the codec holds the GIL. Running whole sessions in separate processes is
+        # worth ~2x over the same core count spent on more threads.
+        print(f"running {args.jobs} sessions concurrently, {args.threads} threads each")
+        with ProcessPoolExecutor(max_workers=args.jobs) as pool:
+            futures = {}
+            for rec in todo:
+                tar_path = Path(rec.path)
+                futures[pool.submit(
+                    process_one, tar_path, out_path_for(tar_path),
+                    not args.no_verify_full, args.threads, args.keep_restored,
+                )] = tar_path
+            for n, fut in enumerate(as_completed(futures), 1):
+                tar_path = futures[fut]
+                try:
+                    ok += record(fut.result(), n)
+                except Exception as e:  # noqa: BLE001 - one bad session must not stop the run
+                    record(failure(tar_path, out_path_for(tar_path), e), n)
+    else:
+        for n, rec in enumerate(todo, 1):
+            tar_path = Path(rec.path)
+            out_path = out_path_for(tar_path)
+            print(f"\n[{n}/{len(todo)}] {session_id(tar_path)}  {rec.bytes/1e9:.1f} GB  "
+                  f"{rec.kind}  -> {out_path.name}", flush=True)
+            try:
+                ok += record(process_one(
+                    tar_path, out_path,
+                    verify_full=not args.no_verify_full,
+                    threads=args.threads,
+                    keep_restored=args.keep_restored,
+                ), n)
+            except Exception as e:  # noqa: BLE001
+                record(failure(tar_path, out_path, e), n)
+
+    elapsed = time.perf_counter() - t_start
+    done_bytes = sum(r.bytes for r in todo)
+    print(f"\n{ok}/{len(todo)} succeeded in {elapsed/3600:.2f} h "
+          f"({done_bytes/1e6/elapsed:.0f} MB/s aggregate); log in {log_path}")
     return 0 if ok == len(todo) else 1
 
 
