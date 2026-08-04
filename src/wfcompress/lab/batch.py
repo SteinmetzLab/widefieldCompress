@@ -68,6 +68,7 @@ def process_one(
     result["elapsed_s"] = time.perf_counter() - t0
     result["ok"] = True
     sidecar.write_readme(out_path, meta)
+    sidecar.write_preview_frame(out_path)
     sidecar.write_receipt(out_path, meta, extra={k: result[k] for k in
                                                  ("tar_sha256", "byte_identical")
                                                  if k in result})

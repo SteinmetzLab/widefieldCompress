@@ -38,6 +38,9 @@ def cmd_compress(args) -> int:
     if not args.no_sidecar:
         sidecar.write_readme(args.dst, meta)
         sidecar.write_receipt(args.dst, meta)
+        preview = sidecar.write_preview_frame(args.dst)
+        if preview:
+            print(f"  preview frame -> {preview.name}")
     return 0
 
 

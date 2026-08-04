@@ -260,3 +260,55 @@ def test_corrupted_codestream_is_caught(tmp_path):
     wfz.write_bytes(bytes(blob))
     with pytest.raises(Exception):
         decompress(wfz, tmp_path / "out.tar")
+
+
+def test_preview_frame_is_the_original_member_for_tiff_archives(tmp_path):
+    """For TIFF archives the sidecar must be the original member byte-for-byte, so the camera
+    metadata survives and it is not merely a re-encode."""
+    from wfcompress import sidecar
+
+    frames = make_frames(n=10, shift=4)
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, frames)
+    wfz = tmp_path / "a.wfz"
+    compress(src, wfz)
+
+    preview = sidecar.write_preview_frame(wfz)
+    assert preview.exists()
+    got = tifffile.imread(preview)
+    with tarfile.open(src) as tf:
+        names = [m.name for m in tf.getmembers() if m.size]
+        matching = [n for n in names if tf.extractfile(n).read() == preview.read_bytes()]
+    assert matching, "preview is not byte-identical to any original member"
+    assert got.shape == frames.shape[1:]
+
+
+def test_preview_frame_avoids_a_blank_leading_frame(tmp_path):
+    """Recordings often start before the illumination is on. Frame 0 would be a useless preview."""
+    from wfcompress import sidecar
+
+    frames = make_frames(n=12)
+    frames[:4] = 0  # dark start, as happens on the real rig
+    src = tmp_path / "in.tar"
+    write_tiff_tar(src, frames)
+    wfz = tmp_path / "a.wfz"
+    compress(src, wfz)
+
+    got = tifffile.imread(sidecar.write_preview_frame(wfz))
+    assert got.max() > 0, "preview picked a blank frame"
+
+
+def test_preview_frame_is_synthesised_for_headerless_archives(tmp_path):
+    from wfcompress import sidecar
+
+    frames = make_frames(n=10, rows=32, cols=50)
+    src = tmp_path / "in.tar"
+    write_raw_tar(src, frames)
+    wfz = tmp_path / "a.wfz"
+    compress(src, wfz, shape=(32, 50))
+
+    preview = sidecar.write_preview_frame(wfz)
+    with tifffile.TiffFile(preview) as tf:
+        page = tf.pages[0]
+        assert page.shape == (32, 50)
+        assert "Synthesised preview" in page.tags["ImageDescription"].value
