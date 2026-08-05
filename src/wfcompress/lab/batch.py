@@ -17,6 +17,7 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 
 from .. import codec, filelog, sidecar
@@ -92,6 +93,36 @@ def process_one(
     return result
 
 
+def clean_stale_partials(session_dirs, file_log=None) -> tuple[int, int]:
+    """Remove leftover ``*.partial-*`` files before starting. Returns (count, bytes).
+
+    An atomic write deletes its temporary on the way out, but a worker killed outright never runs
+    that cleanup. One crashed run left 518 GB of them on the share. They are undecodable by
+    construction - a .wfz with no footer - and the archive they were being built from is untouched,
+    so they are pure garbage.
+
+    This assumes no other run is working the same directories, which is the same assumption the
+    output paths already make.
+    """
+    n = total = 0
+    for d in session_dirs:
+        try:
+            stale = [f for f in Path(d).iterdir() if ".partial-" in f.name]
+        except OSError:
+            continue
+        for f in stale:
+            try:
+                size = f.stat().st_size
+                filelog.record(file_log, "delete", f, size_bytes=size,
+                               note="stale temporary from an interrupted run")
+                f.unlink()
+                n += 1
+                total += size
+            except OSError:
+                continue
+    return n, total
+
+
 def canonical(path: str | Path) -> str:
     """A comparison key that survives the same file being named different ways.
 
@@ -148,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--assume-shape", type=int, nargs=2, metavar=("ROWS", "COLS"),
                    help="frame geometry to use ONLY for archives where it cannot be resolved from "
                         "the session folder; never overrides a known shape")
+    p.add_argument("--keep-stale-partials", action="store_true",
+                   help="do not remove leftover *.partial-* files from an interrupted run")
     p.add_argument("--log", default="batch_log.jsonl")
     args = p.parse_args(argv)
 
@@ -187,7 +220,14 @@ def main(argv: list[str] | None = None) -> int:
         todo = todo[: args.limit]
 
     print(f"{len(todo)} sessions to process ({sum(r.bytes for r in todo)/1e12:.2f} TB), "
-          f"{len(done)} already done")
+          f"{len(done)} already done", flush=True)
+
+    if todo and not args.keep_stale_partials:
+        n, nbytes = clean_stale_partials(
+            {Path(r.path).parent for r in todo}, str(file_log) if file_log else None)
+        if n:
+            print(f"removed {n} stale temporary file(s) from an interrupted run "
+                  f"({nbytes/1e9:.1f} GB reclaimed)", flush=True)
 
     def out_path_for(tar_path: Path) -> Path:
         out_dir = Path(args.out_dir) if args.out_dir else tar_path.parent
@@ -232,12 +272,27 @@ def main(argv: list[str] | None = None) -> int:
                     not args.no_verify_full, args.threads, args.keep_restored,
                     args.min_age_s, str(file_log) if file_log else None, assume_shape,
                 )] = tar_path
+            broken = False
             for n, fut in enumerate(as_completed(futures), 1):
                 tar_path = futures[fut]
                 try:
                     ok += record(fut.result(), n)
+                except BrokenProcessPool as e:
+                    # every worker died at once - usually the whole run was signalled, not a bug
+                    # in one session. Record it, but only shout about it once.
+                    if not broken:
+                        broken = True
+                        print(
+                            "\n*** the worker pool died; every queued session will be marked "
+                            "failed and retried on the next run ***",
+                            flush=True,
+                        )
+                    record(failure(tar_path, out_path_for(tar_path), e), n)
                 except Exception as e:  # noqa: BLE001 - one bad session must not stop the run
                     record(failure(tar_path, out_path_for(tar_path), e), n)
+            if broken:
+                print("run ended early. Restart it: completed sessions are skipped and stale "
+                      "temporaries are cleaned up automatically.", flush=True)
     else:
         for n, rec in enumerate(todo, 1):
             tar_path = Path(rec.path)
