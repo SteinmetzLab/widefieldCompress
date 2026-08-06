@@ -34,6 +34,27 @@ class Entry:
         return self.data_offset + self.padded_size
 
 
+class MalformedArchive(ValueError):
+    """A tar header could not be parsed. Carries the offset, which a bare ValueError did not."""
+
+
+def parse_size(field: bytes) -> int:
+    """Decode a tar header's size field.
+
+    Normally octal ASCII, but GNU tar switches to base-256 binary (high bit of the first byte set)
+    for values that will not fit - in practice, members of 8 GiB or more. Some of these archives
+    bundle a whole session, widefield frames plus the SpikeGLX recording, and an imec ``.bin`` is
+    comfortably over that, so the encoding is not exotic here.
+    """
+    if field and field[0] & 0x80:
+        return int.from_bytes(bytes([field[0] & 0x7F]) + field[1:], "big")
+    text = field.rstrip(b"\0 ").decode("ascii", "replace")
+    try:
+        return int(text or "0", 8)
+    except ValueError as e:
+        raise MalformedArchive(f"size field is neither octal nor base-256: {field!r}") from e
+
+
 def walk(fh: BinaryIO) -> Iterator[Entry]:
     """Yield every entry in file order, stopping at the end-of-archive marker."""
     off = 0
@@ -43,8 +64,10 @@ def walk(fh: BinaryIO) -> Iterator[Entry]:
         if len(header) < BLOCK or header[:1] == b"\0":
             return
         name = header[:100].rstrip(b"\0").decode("utf-8", "surrogateescape")
-        raw_size = header[124:136].rstrip(b"\0 ").decode("ascii", "replace")
-        size = int(raw_size or "0", 8)
+        try:
+            size = parse_size(header[124:136])
+        except MalformedArchive as e:
+            raise MalformedArchive(f"{e} at offset {off:,}") from None
         entry = Entry(header=header, name=name, size=size, data_offset=off + BLOCK)
         yield entry
         off = entry.end_offset
@@ -70,10 +93,9 @@ def _entry_at(fh: BinaryIO, offset: int) -> Entry | None:
     if len(header) < BLOCK or header[:1] == b"\0":
         return None
     name = header[:100].rstrip(b"\0").decode("utf-8", "surrogateescape")
-    raw_size = header[124:136].rstrip(b"\0 ").decode("ascii", "replace")
     try:
-        size = int(raw_size or "0", 8)
-    except ValueError:
+        size = parse_size(header[124:136])
+    except MalformedArchive:
         return None
     return Entry(header=header, name=name, size=size, data_offset=offset + BLOCK)
 

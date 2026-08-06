@@ -384,3 +384,40 @@ def test_fast_enumeration_sees_a_trailing_directory_entry(tmp_path):
     compress(src, wfz, shape=(32, 32))
     decompress(wfz, out)
     assert sha256_file(src) == sha256_file(out)
+
+
+def test_base256_size_field_is_parsed_not_crashed_on(tmp_path):
+    """GNU tar encodes sizes of 8 GiB or more in base-256 binary. Two real archives bundle a
+    SpikeGLX recording alongside the widefield frames, and an imec .bin is over that threshold,
+    so parsing the field as octal raised a bare ValueError with no indication of where.
+    """
+    from wfcompress.tarwalk import MalformedArchive, parse_size
+
+    assert parse_size(b"00001234567\x00") == 0o1234567
+    assert parse_size(b"\0" * 12) == 0
+
+    # 12-byte base-256: high bit set on the first byte, remainder big-endian
+    value = 12_000_000_000
+    field = bytes([0x80]) + value.to_bytes(11, "big")
+    assert parse_size(field) == value
+
+    with pytest.raises(MalformedArchive, match="neither octal nor base-256"):
+        parse_size(b"not octal!!!")
+
+
+def test_mixed_content_archive_is_rejected_with_a_useful_message(tmp_path):
+    """Session archives that bundle ephys alongside the frames have members of many sizes. The
+    frame layout is taken from the first member, so this has to be refused -- clearly."""
+    src = tmp_path / "mixed.tar"
+    with tarfile.open(src, "w") as tf:
+        for i, f in enumerate(make_frames(n=4, rows=32, cols=32)):
+            data = f.astype("<u2").tobytes()
+            info = tarfile.TarInfo(f"1/frame-{i}")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+        blob = tarfile.TarInfo("1/p0_g0/p0_g0_imec0.ap.bin")
+        blob.size = 4096
+        tf.addfile(blob, io.BytesIO(b"\x01" * 4096))
+
+    with pytest.raises(UnsupportedArchive, match="different sizes"):
+        compress(src, tmp_path / "a.wfz", shape=(32, 32))
