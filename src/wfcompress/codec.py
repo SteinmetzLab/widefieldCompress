@@ -161,27 +161,19 @@ def _entry_spans(entries, batch: int) -> list[tuple[int, int, int]]:
 def _preflight(src: Path, entries, members) -> None:
     """Reject tar layouts this container cannot reproduce exactly, before writing anything.
 
-    Two cases are known to break byte-identical restore, both verified against real tars:
+    Trailing zero-size entries used to be rejected here. They are now reconstructed properly
+    instead, which matters because they are real: AL_0039 2025-10-02 ends with an empty
+    ``1/p0_g0/`` directory tar'd in alongside its 426,324 frames.
 
-    * a zero-size entry (a directory, say) *after* the last data member - reconstruction emits
-      pending headers only while looking for the next member, so a trailing one is dropped;
-    * nonzero bytes in a member's alignment padding - reconstruction synthesises zero padding.
+    Member padding is checked during the encoding pass instead of here. Doing it in preflight
+    meant one scattered read per member -- 544,000 network round trips on a 344 GB archive, for
+    bytes the encoding pass reads anyway. Aborting part-way is safe because the output only exists
+    as a temporary file until the very end.
 
-    Neither occurs in the widefield corpus, and both are cheap to detect here.
+    What is left is the one thing that must be caught before any work is done: the frame layout is
+    taken from the first member and applied to every other one, which is only sound if they are all
+    the same size.
     """
-    last_member = max(i for i, e in enumerate(entries) if e.size > 0)
-    trailing = [e for e in entries[last_member + 1 :]]
-    if trailing:
-        raise UnsupportedArchive(
-            f"{src.name}: {len(trailing)} zero-size tar entr"
-            f"{'y' if len(trailing) == 1 else 'ies'} after the last data member "
-            f"(first: {trailing[0].name!r}); reconstruction cannot place them"
-        )
-
-    # Member padding is checked during the encoding pass instead of here. Doing it in preflight
-    # meant one scattered read per member -- 544,000 network round trips on a 344 GB archive, for
-    # bytes the encoding pass reads anyway. Aborting part-way is safe because the output only
-    # exists as a temporary file until the very end.
     sizes = {e.size for e in members}
     if len(sizes) != 1:
         raise UnsupportedArchive(
@@ -463,6 +455,15 @@ def iter_tar_bytes(
                 pixel_hash.update(body)
             if progress:
                 progress(min(start + batch, n), n, time.perf_counter() - t0)
+
+        # Zero-size entries *after* the last frame. The loop above only emits pending headers while
+        # looking for the next data member, so a trailing directory entry would be dropped and the
+        # rebuilt archive would differ. One real archive has exactly this: AL_0039 2025-10-02 ends
+        # with an empty `1/p0_g0/` directory tar'd in alongside 426,324 frames.
+        while header_i * tarwalk.BLOCK < len(footer.tar_headers):
+            yield footer.tar_headers[header_i * tarwalk.BLOCK : (header_i + 1) * tarwalk.BLOCK]
+            header_i += 1
+
         yield footer.trailer
 
     if pixel_hash.hexdigest() != meta["pixels_sha256"]:

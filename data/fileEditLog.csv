@@ -181,3 +181,18 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-05T15:44:12+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\LK_0001\2021-04-07\1\widefield.wfz.frame.tif,528530,DESKTOP-KH3D2OM,49200,
 2026-08-05T15:44:13+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\LK_0001\2021-04-07\1\widefield.wfz.receipt.json,1399,DESKTOP-KH3D2OM,49200,
 2026-08-05T15:56:49+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2026-05-26\1\widefield.wfz.partial-49200,0,DESKTOP-KH3D2OM,49200,temporary output
+2026-08-05T21:29:56+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AB_0032\2024-06-28\1\widefield.wfz.partial-22672,94334073181,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:29:58+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2026-05-26\1\widefield.wfz.partial-49200,1545512930,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:29:59+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2024-07-12\1\widefield.wfz.partial-19484,58165055262,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:30:00+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-28\1\widefield.wfz.partial-5888,93113800788,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:30:01+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-04-18\4\widefield.wfz.partial-17204,69436610559,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:30:01+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-01-21\1\widefield.wfz.partial-30584,53417981664,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:30:01+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0058\2022-03-09\1\widefield.wfz.partial-20232,67898807406,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T21:30:04+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0048\2026-07-10\3\widefield.wfz.partial-45184,80575410255,DESKTOP-KH3D2OM,37104,stale temporary from an interrupted run
+2026-08-05T22:48:38+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-01-21\1\widefield.wfz.partial-16888,0,DESKTOP-KH3D2OM,16888,temporary output
+2026-08-05T22:50:01+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-28\1\widefield.wfz.partial-29196,0,DESKTOP-KH3D2OM,29196,temporary output
+2026-08-05T22:50:04+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0048\2026-07-10\3\widefield.wfz.partial-44348,0,DESKTOP-KH3D2OM,44348,temporary output
+2026-08-05T22:50:34+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-04-18\4\widefield.wfz.partial-37780,0,DESKTOP-KH3D2OM,37780,temporary output
+2026-08-05T22:51:34+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2024-07-12\1\widefield.wfz.partial-6208,0,DESKTOP-KH3D2OM,6208,temporary output
+2026-08-05T22:51:37+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0058\2022-03-09\1\widefield.wfz.partial-35508,0,DESKTOP-KH3D2OM,35508,temporary output
+2026-08-05T22:52:53+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AB_0032\2024-06-28\1\widefield.wfz.partial-12980,0,DESKTOP-KH3D2OM,12980,temporary output

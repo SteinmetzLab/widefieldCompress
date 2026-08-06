@@ -114,23 +114,37 @@ def test_existing_destination_is_replaced_atomically(tmp_path):
 # --- P1: tar layouts the byte-identical claim did not cover -------------------------------------
 
 
-def test_trailing_zero_size_entry_is_refused(tmp_path):
-    """A directory entry after the last frame is never emitted by the reconstruction loop, so the
-    rebuilt archive had a different SHA-256."""
-    src = tmp_path / "in.tar"
-    with tarfile.open(src, "w") as tf:
-        for i, f in enumerate(make_frames(n=4)):
+def _tar_with_trailing_dir(path, n_frames=4, n_dirs=1):
+    with tarfile.open(path, "w") as tf:
+        for i, f in enumerate(make_frames(n=n_frames)):
             buf = io.BytesIO()
             tifffile.imwrite(buf, f, photometric="minisblack")
             data = buf.getvalue()
             info = tarfile.TarInfo(f"1/f{i}.tiff")
             info.size = len(data)
             tf.addfile(info, io.BytesIO(data))
-        d = tarfile.TarInfo("1/after/")
-        d.type = tarfile.DIRTYPE
-        tf.addfile(d)
-    with pytest.raises(UnsupportedArchive, match="after the last data member"):
-        compress(src, tmp_path / "a.wfz")
+        for k in range(n_dirs):
+            d = tarfile.TarInfo(f"1/after{k}/")
+            d.type = tarfile.DIRTYPE
+            tf.addfile(d)
+
+
+@pytest.mark.parametrize("n_dirs", [1, 3])
+def test_trailing_zero_size_entries_round_trip(tmp_path, n_dirs):
+    """A directory entry after the last frame was originally dropped by the reconstruction loop,
+    which emitted pending headers only while looking for the next data member. This is not
+    hypothetical: AL_0039 2025-10-02 ends with an empty `1/p0_g0/` beside 426,324 frames.
+    """
+    src = tmp_path / "in.tar"
+    _tar_with_trailing_dir(src, n_dirs=n_dirs)
+    wfz, out = tmp_path / "a.wfz", tmp_path / "out.tar"
+    compress(src, wfz)
+    decompress(wfz, out)
+    assert sha256_file(src) == sha256_file(out)
+    with tarfile.open(out) as tf:
+        # tarfile strips the trailing slash from directory names on read
+        assert [m.name.rstrip("/") for m in tf.getmembers()][-1] == f"1/after{n_dirs - 1}"
+        assert sum(1 for m in tf.getmembers() if m.isdir()) == n_dirs
 
 
 def test_nonzero_member_padding_is_refused(tmp_path):
@@ -364,6 +378,9 @@ def test_fast_enumeration_sees_a_trailing_directory_entry(tmp_path):
         d.type = tarfile.DIRTYPE
         tf.addfile(d)
     names = [e.name for e in tarwalk.read_entries(src)]
-    assert names[-1] == "1/after/"
-    with pytest.raises(UnsupportedArchive, match="after the last data member"):
-        compress(src, tmp_path / "a.wfz", shape=(32, 32))
+    assert names[-1] == "1/after/", "the fast path must not stop at the last frame"
+    # and the reconstruction must place it, not drop it
+    wfz, out = tmp_path / "a.wfz", tmp_path / "out.tar"
+    compress(src, wfz, shape=(32, 32))
+    decompress(wfz, out)
+    assert sha256_file(src) == sha256_file(out)
