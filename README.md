@@ -19,12 +19,46 @@ wfcompress decompress widefield.wfz restored.tar
 wfcompress verify     widefield.tar restored.tar     # -> IDENTICAL
 ```
 
+## Getting data out
+
+`decompress` rebuilds the archive, which is what you want to prove nothing was lost. It is not
+what you want in order to *use* the data — you get a 200 GB tar you then have to untar. `extract`
+skips that step:
+
+```bash
+wfcompress extract widefield.wfz ./frames/            # the original TIFFs, as tar -xf would give
+wfcompress extract widefield.wfz wf.bin --bin         # one flat headerless uint16 binary
+wfcompress extract widefield.wfz wf.bin --bin --frames 0 1000
+```
+
+`--bin` writes exactly `rows * cols * n_frames * 2` bytes, frames concatenated in **acquisition
+order** — the same shape of file as a SpikeGLX `.ap.bin`, and the fastest thing to get into
+analysis code:
+
+```python
+import numpy as np
+mov = np.memmap("wf.bin", dtype="<u2", mode="r").reshape(-1, 560, 560)
+```
+
+Geometry is repeated in `wf.bin.json`, since the binary carries no header of its own.
+
+Two things `--bin` normalises rather than transcribes, both of which are wrong the other way:
+
+- **Frame order.** These tars are written in lexicographic member-name order (`frame-0, frame-1,
+  frame-10, frame-100`), so archive position is *not* recording position. The permutation is stored
+  at compression time and applied here. `--order storage` opts out.
+- **Byte order.** Part of this corpus is big-endian TIFF and part is little-endian headerless raw,
+  so copying the source bytes would make two identical-looking sessions need different readers.
+  Output is little-endian by default; `--byteorder source` opts out.
+
+Or read frames directly, with no intermediate file at all:
+
 ```python
 from wfcompress import WfzReader
 
 with WfzReader("widefield.wfz") as r:
     print(r.n_frames, r.shape)
-    frame = r.frame(2000)        # numpy array, exactly as acquired
+    frame = r.frame(2000)        # numpy array, exactly as acquired, acquisition order
 ```
 
 ## What it does

@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import codec, container, sidecar
+from . import codec, container, extraction, sidecar
 from .reader import WfzReader
 
 
@@ -70,6 +70,46 @@ def cmd_decompress(args) -> int:
         f"size {'matches' if result['size_matches'] else 'DIFFERS FROM'} the original"
     )
     return 0 if result["size_matches"] else 1
+
+
+def cmd_extract(args) -> int:
+    fmt = "bin" if args.bin else "files"
+    r = extraction.extract(
+        args.src,
+        args.dst,
+        fmt=fmt,
+        first=args.frames[0] if args.frames else None,
+        last=args.frames[1] if args.frames else None,
+        order=args.order,
+        byteorder=args.byteorder,
+        threads=args.threads,
+        overwrite=args.overwrite,
+        progress=None if args.quiet else _progress("extract", 1),
+    )
+    rows, cols = r["shape"]
+    if fmt == "bin":
+        print(
+            f"  {r['n_frames']:,} frames x {rows}x{cols} {r['dtype']} "
+            f"= {r['bytes_written']:,} bytes -> {args.dst}"
+        )
+        print(f"  read it with: np.memmap(path, dtype='{r['dtype']}', mode='r')"
+              f".reshape(-1, {rows}, {cols})")
+        if r["byteswapped"]:
+            print(f"  source pixels are {r['source_dtype']} (big-endian TIFF); written "
+                  f"little-endian so ordinary readers work. --byteorder source keeps the "
+                  f"archive's own bytes.")
+        print(f"  geometry also written to {Path(r['sidecar']).name}")
+    else:
+        print(f"  {r['n_frames']:,} files ({r['bytes_written']/1e9:.2f} GB) -> {args.dst}")
+    if r["order"] == "storage" and not r["temporal_order_known"]:
+        print("  NOTE: this archive's member names carry no frame number, so frames are in "
+              "archive order, which may not be acquisition order")
+    elif fmt == "bin":
+        print(f"  frame order: {r['order']}")
+    print("  pixel SHA-256 matches the value recorded at compression time"
+          if r["pixels_verified"]
+          else "  partial extraction: per-frame CRC-32 checked, whole-archive hash not applicable")
+    return 0
 
 
 def cmd_check(args) -> int:
@@ -138,6 +178,33 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("src")
     d.add_argument("dst")
     d.set_defaults(func=cmd_decompress)
+
+    x = sub.add_parser(
+        "extract",
+        help=".wfz -> a folder of the original frame files, or one flat .bin",
+        description="Decode straight to usable data, skipping the intermediate tar. Without "
+                    "--bin you get the original per-frame files, byte-identical, with their "
+                    "original names and modification times. With --bin you get a single "
+                    "headerless binary of rows*cols*n_frames*2 bytes, frames in acquisition "
+                    "order, like a SpikeGLX .ap.bin.",
+    )
+    x.add_argument("src")
+    x.add_argument("dst", help="output directory, or the output file when --bin is given")
+    x.add_argument("--bin", action="store_true",
+                   help="write one flat headerless binary instead of a folder of frame files")
+    x.add_argument("--frames", type=int, nargs=2, metavar=("FIRST", "LAST"),
+                   help="extract only frames [FIRST, LAST); indices are in --order")
+    x.add_argument("--order", choices=("acquisition", "storage"), default="acquisition",
+                   help="acquisition (default) reorders frames to the order they were recorded; "
+                        "storage keeps the order they sit in inside the archive, which for these "
+                        "tars is lexicographic by name (frame-0, frame-1, frame-10, ...)")
+    x.add_argument("--byteorder", choices=("little", "source"), default="little",
+                   help="--bin only. Part of this corpus is big-endian TIFF and part is "
+                        "little-endian raw; 'little' (default) writes little-endian either way so "
+                        "the same reader works for every session, 'source' keeps the archive's "
+                        "own bytes")
+    x.add_argument("--overwrite", action="store_true", help="replace existing output files")
+    x.set_defaults(func=cmd_extract)
 
     v = sub.add_parser("verify", help="compare the sha256 of two files")
     v.add_argument("a")

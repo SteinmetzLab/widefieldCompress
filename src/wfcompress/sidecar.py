@@ -37,16 +37,37 @@ It is **lossless**. {verified_line}
 
 ```bash
 pip install git+{repo}@{commit_ref}
-wfcompress decompress {stem}.wfz {stem}.tar
 ```
 
-That rebuilds the original tar. To confirm it is identical to what went in:
+**If you want the frames** — a folder of the original image files, exactly as `tar -xf` would have
+given you, without ever materialising the tar:
 
 ```bash
+wfcompress extract {stem}.wfz ./frames/
+```
+
+**If you want one flat array** — headerless binary, `{rows} x {cols} x {n_frames}` uint16,
+frames in acquisition order, the same shape of file as a SpikeGLX `.ap.bin`. Usually the fastest
+thing to get into analysis code, and memory-mappable:
+
+```bash
+wfcompress extract {stem}.wfz {stem}.bin --bin
+```
+```python
+import numpy as np
+mov = np.memmap("{stem}.bin", dtype="{dtype}", mode="r").reshape(-1, {rows}, {cols})
+```
+Geometry is repeated in `{stem}.bin.json`, since the binary itself carries no header.
+Add `--frames FIRST LAST` to pull out only part of a recording.
+
+**If you want the original archive back**, byte for byte:
+
+```bash
+wfcompress decompress {stem}.wfz {stem}.tar
 sha256sum {stem}.tar        # compare with tar_sha256 in {stem}.wfz.receipt.json
 ```
 
-To read frames directly without rebuilding the tar:
+**If you want a few frames in Python**, with no intermediate files at all:
 
 ```python
 from wfcompress import WfzReader
@@ -54,6 +75,11 @@ with WfzReader("{stem}.wfz") as r:
     print(r.n_frames, r.shape)
     frame = r.frame(0)          # numpy array, exactly as acquired
 ```
+
+> Note on ordering: this tar was written in lexicographic member-name order
+> (`frame-0, frame-1, frame-10, frame-100`), so position in the archive is **not** position in the
+> recording. `extract --bin` and `WfzReader.frame(i)` both undo that; `extract` to a folder keeps
+> the original filenames, which carry the frame number.
 
 ## What was done to the pixels
 
@@ -86,8 +112,11 @@ def write_readme(wfz_path: str | Path, meta: dict, file_log=None) -> Path:
     prov = meta.get("provenance", {})
     commit = prov.get("git_commit") or "unknown"
     shift = meta.get("shift", 0)
+    rows, cols = (list(meta.get("shape", (0, 0))) + [0, 0])[:2]
     text = README_TEMPLATE.format(
         stem=stem,
+        rows=rows,
+        cols=cols,
         source_name=meta.get("source_name", "the original tar"),
         source_bytes=meta.get("source_bytes", 0),
         output_bytes=meta.get("output_bytes", 0),

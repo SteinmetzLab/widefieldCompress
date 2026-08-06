@@ -11,3 +11,4 @@ _bench/
 *.tar
 sample_frames.npy
 frame0.npy
+scratch.py
