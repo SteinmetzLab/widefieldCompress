@@ -55,10 +55,10 @@ wfcompress extract {stem}.wfz {stem}.bin --bin
 ```
 ```python
 import numpy as np
-mov = np.memmap("{stem}.bin", dtype="{dtype}", mode="r").reshape(-1, {rows}, {cols})
+mov = np.memmap("{stem}.bin", dtype="{bin_dtype}", mode="r").reshape(-1, {rows}, {cols})
 ```
 Geometry is repeated in `{stem}.bin.json`, since the binary itself carries no header.
-Add `--frames FIRST LAST` to pull out only part of a recording.
+Add `--frames FIRST LAST` to pull out only part of a recording.{endian_note}
 
 **If you want the original archive back**, byte for byte:
 
@@ -113,10 +113,22 @@ def write_readme(wfz_path: str | Path, meta: dict, file_log=None) -> Path:
     commit = prov.get("git_commit") or "unknown"
     shift = meta.get("shift", 0)
     rows, cols = (list(meta.get("shape", (0, 0))) + [0, 0])[:2]
+    # `extract --bin` writes little-endian whatever the archive holds, because part of this corpus
+    # is big-endian TIFF and part is little-endian raw. The snippet has to say what comes out, not
+    # what went in, or it hands the reader byte-swapped values.
+    dtype = str(meta.get("dtype", "<u2"))
+    bin_dtype = "<" + dtype[1:] if dtype[:1] in "<>=|" else dtype
     text = README_TEMPLATE.format(
         stem=stem,
         rows=rows,
         cols=cols,
+        bin_dtype=bin_dtype,
+        endian_note=(
+            f"\n\nThe frames are stored {dtype} (big-endian) inside the archive; `--bin` writes "
+            f"{bin_dtype} so ordinary readers work. `--byteorder source` keeps the original bytes."
+            if dtype != bin_dtype
+            else ""
+        ),
         source_name=meta.get("source_name", "the original tar"),
         source_bytes=meta.get("source_bytes", 0),
         output_bytes=meta.get("output_bytes", 0),

@@ -315,6 +315,32 @@ def test_zero_size_entries_are_recreated(tmp_path):
     assert len(list((out / "1").glob("frame-*"))) == 5
 
 
+@pytest.mark.parametrize("byteorder", ["<", ">"])
+def test_readme_advertises_the_dtype_extract_actually_writes(tmp_path, byteorder):
+    """The README beside each .wfz hands people a `np.memmap(..., dtype=...)` line. If that dtype
+    is the archive's rather than the one --bin produces, every value they read is byte-swapped --
+    and it looks like plausible data, not like an error."""
+    import re
+
+    from wfcompress import sidecar
+
+    frames = make_frames(n=6, rows=32, cols=50)
+    src = tmp_path / "in.tar"
+    write_lexicographic_tar(src, frames, byteorder=byteorder)
+    wfz = tmp_path / "widefield.wfz"
+    meta = compress(src, wfz)
+
+    readme = sidecar.write_readme(wfz, meta).read_text(encoding="utf-8")
+    m = re.search(r"np\.memmap\([^)]*dtype=\"([^\"]+)\"", readme)
+    assert m, "README no longer shows a memmap line"
+
+    r = extract(wfz, tmp_path / "wf.bin", fmt="bin")
+    assert m.group(1) == r["dtype"], "README dtype does not match what --bin writes"
+    np.testing.assert_array_equal(
+        np.memmap(tmp_path / "wf.bin", dtype=m.group(1), mode="r").reshape(6, 32, 50), frames
+    )
+
+
 def test_extract_never_needs_the_intermediate_tar(tmp_path):
     """Regression guard on the whole premise: nothing tar-shaped may appear on disk."""
     frames = make_frames(n=8)
