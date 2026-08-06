@@ -74,16 +74,42 @@ def probe(row):
                 mid = (lo + hi) // 2
                 (lo, hi) = (mid, hi) if ok(mid) else (lo, mid)
             out["break_at_member"] = lo + 1
-            fh.seek(lead + lo * stride)
-            h = fh.read(BLOCK)
-            out["first_other"] = h[:100].rstrip(b"\0").decode("ascii", "backslashreplace")
+            # Walk forward from the last member that is definitely at a computed offset. The
+            # stride only breaks once something non-frame appears, so a short sequential walk
+            # from here names it, without walking the whole archive.
+            off = lead + lo * stride
+            names = []
+            for _ in range(6):
+                fh.seek(off)
+                h = fh.read(BLOCK)
+                if not looks_like_header(h):
+                    names.append("<not a tar header>")
+                    break
+                try:
+                    sz = parse_size(h[124:136])
+                except MalformedArchive:
+                    names.append("<unparseable size>")
+                    break
+                nm = h[:100].rstrip(b"\0").decode("ascii", "backslashreplace")
+                names.append(f"{nm} ({sz:,} B)")
+                off += BLOCK + ((sz + BLOCK - 1) // BLOCK) * BLOCK
+            out["first_other"] = " | ".join(names[1:]) or names[0]
     except (OSError, MalformedArchive) as e:
         out["error"] = f"{type(e).__name__}: {e}"
     return out
 
 
-rows = [r for r in csv.DictReader((HERE / "data" / "census_Y.csv").open(encoding="utf-8"))
-        if r["kind"] in ("frame-N", "basler-tiff") and int(r["bytes"]) > 0]
+prev = HERE / "data" / "mixed_archives.csv"
+only_mixed = prev.exists() and "--all" not in __import__("sys").argv
+if only_mixed:
+    keep = {r["path"] for r in csv.DictReader(prev.open(encoding="utf-8"))
+            if r["uniform"] == "False"}
+    rows = [r for r in csv.DictReader((HERE / "data" / "census_Y.csv").open(encoding="utf-8"))
+            if r["path"] in keep]
+    OUT = HERE / "data" / "mixed_archives_detail.csv"
+else:
+    rows = [r for r in csv.DictReader((HERE / "data" / "census_Y.csv").open(encoding="utf-8"))
+            if r["kind"] in ("frame-N", "basler-tiff") and int(r["bytes"]) > 0]
 print(f"probing {len(rows)} archives ...", flush=True)
 with ThreadPoolExecutor(6) as ex:
     out = list(ex.map(probe, rows))
