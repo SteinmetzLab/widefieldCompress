@@ -353,6 +353,40 @@ Loose-TIFF source, 1,879 frames at 632 kB each, on the share:
 **The archiver matters enormously** — 7-Zip is 7× faster than bsdtar at the identical job, because
 the others write to SMB in 8–16 kB chunks. Only the 7-Zip rows say anything about the pipeline.
 
+### Staging the `.wfz` locally first, then copying it across
+
+Worth a look, because writing the compressed file to the share during compression is measurably
+slower than writing it locally. On the idle machine, 16 threads:
+
+| | raw (1.61 GB) | TIFF (1.19 GB) |
+|---|---|---|
+| compress → local `.wfz` | 24.8 s | 18.6 s |
+| then block-copy it to the share | 2.2 s (310 MB/s) | 1.6 s (314 MB/s) |
+| **staged total** | **27.0 s** | **20.2 s** |
+| compress → share directly | 30.3 s | 22.8 s |
+| **staging saves** | **11%** | **11%** |
+
+So yes, staging is about 11% faster — but that gap is an artefact worth understanding rather than
+a property of the network. Copying the finished file runs at ~310 MB/s; the same bytes written
+incrementally during compression achieve only ~110 MB/s effective. The difference is **write
+size**: `compress` emits one JPEG-LS codestream at a time, 250–350 kB per frame.
+
+Writing 768 MB to the share in different chunk sizes (measured under load, so read the ratios not
+the absolutes):
+
+| write size | share | local NVMe |
+|---|---|---|
+| 64 kB | 5 MB/s | 785 MB/s |
+| 256 kB — *about one frame* | 14 MB/s | 945 MB/s |
+| 1 MB | 40 MB/s | 507 MB/s |
+| 4 MB | 69 MB/s | 614 MB/s |
+| 16 MB | 131 MB/s | 934 MB/s |
+
+**A 9× spread on the share; the local disk does not care at all.** So the fix is not to stage the
+file — it is to buffer the writes, which `codec.WRITE_BUFFER` (16 MB) now does. Staging would cost
+an extra 42% of local disk at exactly the moment the pipeline is trying to free it, for a gap that
+buffering closes for nothing.
+
 ### Recommendation
 
 **Transfer time is not an argument against it.** On this hardware they are the same speed. So the

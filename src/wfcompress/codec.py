@@ -69,18 +69,30 @@ def _assert_distinct(src: Path, dst: Path) -> None:
         raise ValueError(f"source and destination resolve to the same path: {src}")
 
 
+#: Output buffer size. The payload is written one JPEG-LS codestream at a time - 250-350 kB for
+#: these frames - and over SMB the size of each write matters enormously. Measured writing 768 MB
+#: to the lab share: 14 MB/s in 256 kB writes, 69 MB/s in 4 MB writes, 131 MB/s in 16 MB writes.
+#: The same test on local NVMe is flat at 500-950 MB/s whatever the size, so this is purely about
+#: the number of network round trips. Buffering coalesces the per-frame writes into full blocks.
+WRITE_BUFFER = 16 << 20
+
+
 @contextmanager
-def _atomic_output(dst: Path, file_log=None):
+def _atomic_output(dst: Path, file_log=None, buffering: int | None = None):
     """Write to a temporary file beside the destination and rename only on success.
 
     A crash, a full disk or a dropped SMB connection must not leave a partial file sitting under
     the final name, where a stale sidecar could vouch for it.
+
+    ``buffering`` resolves to :data:`WRITE_BUFFER` when not given - read at call time, not bound as
+    a default, so the module global can be changed to measure its effect.
     """
+    buffering = WRITE_BUFFER if buffering is None else buffering
     dst.parent.mkdir(parents=True, exist_ok=True)
     existed = dst.exists()
     tmp = dst.with_name(f"{dst.name}.partial-{os.getpid()}")
     try:
-        with open(tmp, "wb") as fh:
+        with open(tmp, "wb", buffering=buffering) as fh:
             filelog.record(file_log, "create", tmp, size_bytes=0, note="temporary output")
             yield fh
             fh.flush()
