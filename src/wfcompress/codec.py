@@ -152,11 +152,18 @@ def _detect_shift(path: Path, entries, layout, probe: int = 400) -> tuple[int, i
 def _entry_spans(entries, batch: int) -> list[tuple[int, int, int]]:
     """Group entries into contiguous spans of at most ``batch`` data members each.
 
-    Returns (first_entry, last_entry_exclusive, index_of_first_data_member). Spans tile the archive
-    with no gaps, so reading them in order is a single sequential pass over the file.
+    Returns (first_entry, last_entry_exclusive, index_of_first_data_member). Each span is read as
+    one contiguous byte range, so a span must never straddle a gap in the file. When every entry
+    is kept there are no gaps and the spans tile the archive; when non-frame members are being
+    dropped there are, and a span crossing one would pull an 82 GB ephys recording into memory to
+    reach the frame on the far side. Hence the explicit break on discontiguity.
     """
     spans, span_start, in_span, member_i, first_member = [], 0, 0, 0, 0
     for k, e in enumerate(entries):
+        gap = k > span_start and e.data_offset - tarwalk.BLOCK != entries[k - 1].end_offset
+        if gap:
+            spans.append((span_start, k, first_member))
+            span_start, in_span = k, 0
         if e.size:
             if in_span == 0:
                 first_member = member_i
@@ -168,6 +175,18 @@ def _entry_spans(entries, batch: int) -> list[tuple[int, int, int]]:
     if span_start < len(entries):
         spans.append((span_start, len(entries), first_member))
     return spans
+
+
+def _synthetic_trailer(kept) -> bytes:
+    """End-of-archive blocks for an archive we are assembling rather than reproducing.
+
+    Two zero blocks, then padding out to tar's 10 KiB blocking factor - what GNU tar itself writes.
+    Only used when members are being dropped; a faithful rebuild re-emits the original trailer.
+    """
+    body = sum(tarwalk.BLOCK + e.padded_size for e in kept)
+    blocking = 20 * tarwalk.BLOCK
+    total = body + 2 * tarwalk.BLOCK
+    return b"\0" * (2 * tarwalk.BLOCK + (-total % blocking))
 
 
 def _preflight(src: Path, entries, members) -> None:
@@ -190,8 +209,50 @@ def _preflight(src: Path, entries, members) -> None:
     if len(sizes) != 1:
         raise UnsupportedArchive(
             f"{src.name}: members have {len(sizes)} different sizes ({sorted(sizes)[:4]}...); "
-            f"the frame layout is taken from the first member and applied to all"
+            f"the frame layout is taken from the first member and applied to all. If this is a "
+            f"session archive with a SpikeGLX recording tar'd in alongside the frames, verify the "
+            f"non-frame members exist elsewhere and pass drop_members= to keep only the frames."
         )
+
+
+class UnverifiedDiscard(ValueError):
+    """A member was to be dropped without evidence that its bytes exist outside the archive.
+
+    Dropping data is the one thing in this project that cannot be undone by re-running it, so it
+    is gated on an explicit per-member manifest rather than on a filename pattern or a size test.
+    """
+
+
+def _partition(entries, drop_members: dict) -> tuple[list, list, int]:
+    """(kept, dropped, frame_size). Every dropped member must appear in ``drop_members``.
+
+    The frame size is the most common non-zero member size. Zero-size entries - tar's directory
+    records - are always kept: they carry nothing, and dropping them would change the shape of the
+    rebuilt archive for no saving.
+    """
+    from collections import Counter
+
+    sizes = Counter(e.size for e in entries if e.size > 0)
+    if not sizes:
+        raise ValueError("archive contains no data members")
+    frame_size = sizes.most_common(1)[0][0]
+
+    kept, dropped, unverified = [], [], []
+    for e in entries:
+        if e.size == 0 or e.size == frame_size:
+            kept.append(e)
+            continue
+        ev = drop_members.get(e.name)
+        if not ev or not ev.get("verified"):
+            unverified.append(e)
+        dropped.append(e)
+    if unverified:
+        names = ", ".join(f"{e.name} ({e.size:,} B)" for e in unverified[:4])
+        raise UnverifiedDiscard(
+            f"{len(unverified)} member(s) would be discarded with no verified copy outside the "
+            f"archive: {names}. Run wfcompress.lab.mixed to prove they exist elsewhere first."
+        )
+    return kept, dropped, frame_size
 
 
 def compress(
@@ -203,6 +264,7 @@ def compress(
     progress: Callable[[int, int, float], None] | None = None,
     min_age_s: float = 0.0,
     file_log: str | None = None,
+    drop_members: dict[str, dict] | None = None,
 ) -> dict:
     """Compress ``src`` (a tar of frames) to ``dst`` (a .wfz). Returns the metadata dict.
 
@@ -212,6 +274,12 @@ def compress(
     arriving from an acquisition machine. The source's size and mtime are recorded before the read
     and rechecked after it either way, so a concurrent write is detected rather than baked into a
     self-consistent snapshot of a state the file never had.
+
+    ``drop_members`` switches on **partial** mode, for session archives that hold a whole SpikeGLX
+    recording alongside the frames. It maps member name -> the evidence produced by
+    :mod:`wfcompress.lab.mixed` that those bytes exist outside the archive; anything not in it is
+    refused. The result no longer rebuilds the source - it rebuilds a tar of the frames alone -
+    and says so in ``partial``, ``source_tar_sha256`` (null) and ``frames_tar_sha256``.
     """
     src, dst = Path(src), Path(dst)
     t0 = time.perf_counter()
@@ -227,10 +295,18 @@ def compress(
                 f"min required; it may still be being written"
             )
 
-    entries = tarwalk.read_entries(src)
+    all_entries = tarwalk.read_entries(src)
+    if not [e for e in all_entries if e.size > 0]:
+        raise ValueError(f"{src} contains no data members")
+
+    partial = drop_members is not None
+    if partial:
+        entries, dropped, _frame_size = _partition(all_entries, drop_members)
+    else:
+        entries, dropped = all_entries, []
     members = [e for e in entries if e.size > 0]
     if not members:
-        raise ValueError(f"{src} contains no data members")
+        raise ValueError(f"{src} contains no frame members")
     _preflight(src, entries, members)
 
     with open(src, "rb") as fh:
@@ -357,6 +433,22 @@ def compress(
             "n_distinct_shells": len(unique_shells),
             "shell_len": len(unique_shells[0]),
             "pixels_sha256": pixel_hash.hexdigest(),
+            # Partial archives rebuild a tar of the frames alone, not the source, so the field
+            # that means "this reproduces the input" stays null and the rebuildable hash is
+            # reported separately. Nothing downstream should be able to mistake one for the other.
+            "partial": partial,
+            "original_tar_bytes": source_bytes,
+            "dropped_members": [
+                {
+                    "member": e.name,
+                    "bytes": e.size,
+                    "outside_path": (drop_members or {}).get(e.name, {}).get("outside_path", ""),
+                    "sha256": (drop_members or {}).get(e.name, {}).get("sha256", ""),
+                    "verified_by": (drop_members or {}).get(e.name, {}).get("method", ""),
+                }
+                for e in dropped
+            ],
+            "dropped_bytes": sum(e.size for e in dropped),
             "source_tar_sha256": None,  # filled in below, once the trailer has been hashed
             # Not asserted here. Every frame round-tripped and every member reassembled to its
             # original bytes, but only verify() hashes the whole rebuilt archive end to end.
@@ -367,9 +459,20 @@ def compress(
                 "  then:  wfcompress decompress FILE.wfz OUT.tar"
             ),
         }
-        trailer = tarwalk.trailing_bytes(src, entries)
+        trailer = _synthetic_trailer(entries) if partial else tarwalk.trailing_bytes(src, entries)
         tar_hash.update(trailer)
-        meta["source_tar_sha256"] = tar_hash.hexdigest()
+        if partial:
+            meta["frames_tar_sha256"] = tar_hash.hexdigest()
+            meta["frames_tar_bytes"] = (
+                sum(tarwalk.BLOCK + e.padded_size for e in entries) + len(trailer)
+            )
+            meta["how_to_decompress"] = (
+                "pip install git+https://github.com/SteinmetzLab/widefieldCompress"
+                "  then:  wfcompress extract FILE.wfz OUTDIR/   (decompress rebuilds a tar of the "
+                "frames only; the non-frame members were verified to exist elsewhere and dropped)"
+            )
+        else:
+            meta["source_tar_sha256"] = tar_hash.hexdigest()
 
         # The source was opened several times (headers, shift sample, spans, trailer). If it
         # changed under us, the hash above describes a state the file never actually had.
@@ -507,17 +610,20 @@ def decompress(
             fout.write(chunk)
 
     digest = h.hexdigest()
-    expected = meta.get("source_tar_sha256")
+    expected = rebuildable_sha256(meta)
     if expected is not None and digest != expected:
         filelog.record(file_log, "delete", dst, note="rebuilt archive failed its hash")
         dst.unlink(missing_ok=True)
         raise LosslessCheckFailed(
             f"{src}: rebuilt archive hashes {digest}, expected {expected}"
         )
+    # a partial archive reproduces the frames, not the input, so its size deliberately differs
+    expect_bytes = meta.get("frames_tar_bytes") if meta.get("partial") else meta["source_bytes"]
     return {
         "output_bytes": dst.stat().st_size,
         "source_bytes": meta["source_bytes"],
-        "size_matches": dst.stat().st_size == meta["source_bytes"],
+        "partial": bool(meta.get("partial")),
+        "size_matches": expect_bytes is None or dst.stat().st_size == expect_bytes,
         "tar_sha256": digest,
         "byte_identical": None if expected is None else digest == expected,
         "elapsed_s": time.perf_counter() - t0,
@@ -541,7 +647,9 @@ def verify(
     src = Path(src)
     t0 = time.perf_counter()
     meta = container.read_meta(src)
-    expected = meta.get("source_tar_sha256")
+    expected = rebuildable_sha256(meta)
+    partial = bool(meta.get("partial"))
+    expect_bytes = meta.get("frames_tar_bytes") if partial else meta["source_bytes"]
 
     h = hashlib.sha256()
     total = 0
@@ -554,7 +662,8 @@ def verify(
         "wfz": str(src),
         "rebuilt_bytes": total,
         "source_bytes": meta["source_bytes"],
-        "size_matches": total == meta["source_bytes"],
+        "partial": partial,
+        "size_matches": expect_bytes is None or total == expect_bytes,
         "tar_sha256": digest,
         "expected_tar_sha256": expected,
         "byte_identical": (expected is not None and digest == expected),
@@ -569,9 +678,21 @@ def verify(
         )
     if not result["size_matches"]:
         raise LosslessCheckFailed(
-            f"{src}: rebuilt {total} bytes, source was {meta['source_bytes']}"
+            f"{src}: rebuilt {total} bytes, expected {expect_bytes}"
         )
     return result
+
+
+def rebuildable_sha256(meta: dict) -> str | None:
+    """Hash of the tar this .wfz reconstructs, whichever kind of archive it is.
+
+    A faithful archive rebuilds its source and records ``source_tar_sha256``. A partial one
+    rebuilds a tar of the frames alone and records ``frames_tar_sha256``, leaving the first null so
+    nothing can quietly treat it as a reproduction of the input.
+    """
+    if meta.get("partial"):
+        return meta.get("frames_tar_sha256")
+    return meta.get("source_tar_sha256")
 
 
 def sha256_file(path: str | Path, block: int = 1 << 24) -> str:

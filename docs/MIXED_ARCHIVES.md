@@ -1,5 +1,22 @@
 # The 21 `widefield.tar` files that are not only widefield
 
+> **Update, 2026-08-10 — all 21 have already been trimmed, by someone outside this project.**
+> Between 2026-08-06 15:10 and 2026-08-10 01:50 every one of them was rewritten to contain only
+> the frames. Together they went from **3.36 TB to 2.13 TB**, reclaiming 1.23 TB, and each one's
+> frame count now matches the break point this document recorded, exactly — e.g.
+> `FD_011/2026-02-25` holds 243,808 frames and nothing else.
+>
+> Checked afterwards: our own audit log (`data/fileEditLog.csv`, 1,171 rows) contains **no `.tar`
+> writes at all**, so the rewrite was not done by this tooling; and **all 21 ephys recordings still
+> exist unpacked on the share at their recorded sizes**, so nothing was lost.
+>
+> Consequence: these are now ordinary uniform frame archives and the normal pipeline compresses
+> them with no special handling. The ones that already failed in the current run will be picked up
+> on the next restart. The frames-only mode described at the end of this document was built anyway
+> and is kept, because `tarFrames.m` still tars the whole session directory (see
+> [PIPELINE_REVIEW.md](PIPELINE_REVIEW.md) A1) and will keep producing mixed archives until it is
+> fixed.
+
 Found while diagnosing two bulk-run failures that looked like corruption
 (`ValueError: invalid literal for int() with base 8`). They are not corrupt. They contain more than
 they claim to.

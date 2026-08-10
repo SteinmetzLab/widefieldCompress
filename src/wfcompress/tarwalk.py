@@ -55,9 +55,9 @@ def parse_size(field: bytes) -> int:
         raise MalformedArchive(f"size field is neither octal nor base-256: {field!r}") from e
 
 
-def walk(fh: BinaryIO) -> Iterator[Entry]:
-    """Yield every entry in file order, stopping at the end-of-archive marker."""
-    off = 0
+def walk(fh: BinaryIO, start: int = 0) -> Iterator[Entry]:
+    """Yield every entry in file order from ``start``, stopping at the end-of-archive marker."""
+    off = start
     while True:
         fh.seek(off)
         header = fh.read(BLOCK)
@@ -158,18 +158,105 @@ def read_entries(path: str | Path, workers: int = 16) -> list[Entry]:
         if e is None:  # end of archive reached early; the rest is padding
             break
         if e.size != probe.size or not header_checksum_ok(e.header):
-            # the constant-stride assumption does not hold for this archive
-            with open(path, "rb") as f2:
-                return list(walk(f2))
+            # The constant stride stops holding here. Everything before this point sits at a
+            # computed offset *and* passed its own checksum and size check, so the chain up to
+            # here is sound and can be kept; only the remainder needs the slow walk.
+            return _walk_from(path, entries)
         entries.append(e)
 
-    # confirm nothing follows the last entry we accounted for, or fall back
+    # Anything after the last entry we accounted for means the stride ran out before the archive
+    # did - a mixed archive whose trailing content happens to start on a stride boundary. Resume
+    # the sequential walk there rather than restarting it.
     with open(path, "rb") as fh:
         after = _entry_at(fh, entries[-1].end_offset)
     if after is not None:
-        with open(path, "rb") as f2:
-            return list(walk(f2))
+        return _walk_from(path, entries)
     return entries
+
+
+def _walk_from(path: Path, prefix: list[Entry]) -> list[Entry]:
+    """Keep a validated prefix and walk the rest sequentially.
+
+    Some ``widefield.tar`` files hold a run of equally-sized frames and then a whole SpikeGLX
+    recording. Restarting the walk from offset 0 costs one network round trip per member - 405
+    seconds on a 344 GB archive - to re-derive a prefix that was already proven correct. Resuming
+    from the break reduces that to the handful of members that actually follow it.
+    """
+    entries = list(prefix)
+    start = entries[-1].end_offset if entries else 0
+    with open(path, "rb") as fh:
+        for e in walk(fh, start):
+            # `walk` stops at a zero block and raises on an unparseable size, but it will happily
+            # parse arbitrary bytes that merely start non-zero. Past the point where the stride
+            # broke we have no other guarantee that we are looking at headers at all, so check.
+            if not header_checksum_ok(e.header):
+                raise MalformedArchive(
+                    f"header checksum fails at offset {e.data_offset - BLOCK:,}; "
+                    f"the archive is not a plain sequence of tar members from there on"
+                )
+            entries.append(e)
+    return entries
+
+
+def uniform_prefix(path: str | Path) -> tuple[Entry | None, int, int]:
+    """Find the leading run of equally-sized members without enumerating it.
+
+    Returns ``(first_data_entry, n_uniform_members, offset_just_past_them)``.
+
+    Reading every header to answer "where do the frames stop?" costs one network round trip per
+    member - 226,159 of them on one of these archives, minutes over a busy link. But the members
+    are equally sized, so header k sits at a computable offset and validity is monotonic: bisecting
+    for the last valid one answers the same question in about twenty reads.
+
+    ``n_uniform_members`` counts data members only; a leading directory entry is accounted for in
+    the returned offset but not the count.
+    """
+    path = Path(path)
+    total = path.stat().st_size
+    with open(path, "rb") as fh:
+        first = _entry_at(fh, 0)
+        if first is None:
+            return None, 0, 0
+        probe, off = first, 0
+        while probe is not None and probe.size == 0:
+            off = probe.end_offset
+            probe = _entry_at(fh, off)
+        if probe is None:
+            return None, 0, off
+
+        stride = BLOCK + probe.padded_size
+        start = probe.data_offset - BLOCK
+        n = (total - start) // stride
+
+        def ok(k: int) -> bool:
+            e = _entry_at(fh, start + k * stride)
+            return e is not None and e.size == probe.size and header_checksum_ok(e.header)
+
+        if n >= 1 and ok(n - 1):
+            return probe, n, start + n * stride
+        lo, hi = 0, n - 1                       # ok(lo) true, ok(hi) false
+        if not ok(0):
+            return probe, 0, start
+        while hi - lo > 1:
+            mid = (lo + hi) // 2
+            if ok(mid):
+                lo = mid
+            else:
+                hi = mid
+        return probe, lo + 1, start + (lo + 1) * stride
+
+
+def entries_after(path: str | Path, offset: int) -> list[Entry]:
+    """Sequentially walk whatever follows ``offset``. Cheap when it is a handful of members."""
+    out: list[Entry] = []
+    with open(path, "rb") as fh:
+        for e in walk(fh, offset):
+            if not header_checksum_ok(e.header):
+                raise MalformedArchive(
+                    f"header checksum fails at offset {e.data_offset - BLOCK:,}"
+                )
+            out.append(e)
+    return out
 
 
 def trailing_bytes(path: str | Path, entries: list[Entry]) -> bytes:
