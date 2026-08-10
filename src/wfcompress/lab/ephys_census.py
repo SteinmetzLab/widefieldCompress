@@ -106,16 +106,16 @@ def parse_meta(path: Path) -> tuple[int, float]:
     return n, rate
 
 
-def walk_parallel(root: Path, max_depth: int = 7, workers: int = 32,
+def walk_parallel(root: Path, max_depth: int = 7, workers: int = 8,
                   errors: list[str] | None = None, progress=None,
                   keep: tuple[str, ...] = RAW_SUFFIXES) -> list[Path]:
     """Files under ``root`` matching ``keep``, listing directories concurrently, level by level.
 
-    This share is 576 subjects and 8,725 date folders deep and the walk is pure latency, so the
-    thread count sits well above the core count. Not arbitrarily far above, though: 96 threads
-    alongside the compression job's eight workers wedged the SMB client - no progress in
-    twenty-five minutes - where 32 runs cleanly. The concurrency limit here is the connection, not
-    the CPU.
+    This share is 576 subjects and 8,725 date folders deep and the walk is pure latency, so some
+    concurrency helps a lot. But not much: with the compression job's eight workers also on the
+    link, both 96 and 32 threads **wedged the SMB redirector outright** part-way down - every
+    thread blocked in I/O, zero CPU, no progress for an hour. Eight is the conservative setting
+    that leaves headroom for the other job. Raise it only on an otherwise idle machine.
 
     Only matching files are retained. Keeping every path costs hundreds of MB on a tree this size
     and buys nothing - a sorter output directory can hold tens of thousands of files.
@@ -203,7 +203,7 @@ def describe(path: Path, root: Path, server: str) -> EphysFile:
     return rec
 
 
-def scan(root: Path, server: str = "Y", workers: int = 32,
+def scan(root: Path, server: str = "Y", workers: int = 8,
          strict: bool = False, progress=None) -> tuple[EphysCensus, list[str]]:
     errors: list[str] = []
     raw = walk_parallel(root, errors=errors, workers=workers, progress=progress)
