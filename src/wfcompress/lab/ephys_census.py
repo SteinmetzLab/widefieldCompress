@@ -12,6 +12,7 @@ dominated by round trips, not by anything local.
 from __future__ import annotations
 
 import csv
+import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
@@ -105,32 +106,48 @@ def parse_meta(path: Path) -> tuple[int, float]:
     return n, rate
 
 
-def walk_parallel(root: Path, max_depth: int = 7, workers: int = 24,
-                  errors: list[str] | None = None) -> list[Path]:
-    """Every file under ``root``, listing directories concurrently, level by level.
+def walk_parallel(root: Path, max_depth: int = 7, workers: int = 32,
+                  errors: list[str] | None = None, progress=None,
+                  keep: tuple[str, ...] = RAW_SUFFIXES) -> list[Path]:
+    """Files under ``root`` matching ``keep``, listing directories concurrently, level by level.
 
-    A depth-7 sequential walk of this share takes long enough to be painful and is almost entirely
-    latency. Listing each level's directories in parallel turns it into a handful of round trips
-    per level. Unreadable directories are recorded rather than silently skipped - a census that
-    quietly omits a subtree is worse than no census when it feeds a deletion decision.
+    This share is 576 subjects and 8,725 date folders deep and the walk is pure latency, so the
+    thread count sits well above the core count. Not arbitrarily far above, though: 96 threads
+    alongside the compression job's eight workers wedged the SMB client - no progress in
+    twenty-five minutes - where 32 runs cleanly. The concurrency limit here is the connection, not
+    the CPU.
+
+    Only matching files are retained. Keeping every path costs hundreds of MB on a tree this size
+    and buys nothing - a sorter output directory can hold tens of thousands of files.
+
+    Unreadable directories are recorded rather than silently skipped: a census that quietly omits
+    a subtree is worse than no census when it feeds a deletion decision.
     """
     errors = errors if errors is not None else []
     files: list[Path] = []
     level = [root]
 
     def listdir(d: Path) -> tuple[list[Path], list[Path]]:
+        # os.scandir, not Path.iterdir: iterdir yields plain paths and every `.is_dir()` on one is
+        # a fresh stat call. Over SMB under load those measured about half a second each, which
+        # turned listing the 576-entry Subjects root into a five-minute operation. scandir carries
+        # the entry type in the directory listing itself, so the whole level costs one round trip.
         subdirs, plain = [], []
         try:
-            for e in d.iterdir():
-                try:
-                    (subdirs if e.is_dir() else plain).append(e)
-                except OSError as ex:
-                    errors.append(f"{e}: {type(ex).__name__}: {ex}")
+            with os.scandir(d) as it:
+                for e in it:
+                    try:
+                        if e.is_dir(follow_symlinks=False):
+                            subdirs.append(Path(e.path))
+                        elif e.name.endswith(keep):
+                            plain.append(Path(e.path))
+                    except OSError as ex:
+                        errors.append(f"{e.path}: {type(ex).__name__}: {ex}")
         except OSError as ex:
             errors.append(f"{d}: {type(ex).__name__}: {ex}")
         return subdirs, plain
 
-    for _depth in range(max_depth + 1):
+    for depth in range(max_depth + 1):
         if not level:
             break
         nxt: list[Path] = []
@@ -138,6 +155,10 @@ def walk_parallel(root: Path, max_depth: int = 7, workers: int = 24,
             for subdirs, plain in ex.map(listdir, level):
                 nxt.extend(subdirs)
                 files.extend(plain)
+        # A depth-7 walk of this share takes tens of minutes over SMB, and without this the
+        # caller cannot tell a slow level from a hang.
+        if progress:
+            progress(depth, len(level), len(nxt), len(files))
         level = nxt
     return files
 
@@ -182,11 +203,10 @@ def describe(path: Path, root: Path, server: str) -> EphysFile:
     return rec
 
 
-def scan(root: Path, server: str = "Y", workers: int = 24,
-         strict: bool = False) -> tuple[EphysCensus, list[str]]:
+def scan(root: Path, server: str = "Y", workers: int = 32,
+         strict: bool = False, progress=None) -> tuple[EphysCensus, list[str]]:
     errors: list[str] = []
-    files = walk_parallel(root, errors=errors)
-    raw = [p for p in files if p.name.endswith(RAW_SUFFIXES)]
+    raw = walk_parallel(root, errors=errors, workers=workers, progress=progress)
     with ThreadPoolExecutor(workers) as ex:
         records = list(ex.map(lambda p: describe(p, root, server), raw))
     if errors and strict:

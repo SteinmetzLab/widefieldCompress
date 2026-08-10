@@ -20,7 +20,12 @@ OUT = HERE / "data" / "ephys_census_Y.csv"
 def main() -> int:
     t0 = time.perf_counter()
     print(f"walking {ROOT} ...", flush=True)
-    census, errors = scan(ROOT)
+
+    def report(depth, n_dirs, n_next, n_files):
+        print(f"  depth {depth}: listed {n_dirs:,} dirs -> {n_next:,} subdirs, "
+              f"{n_files:,} files so far  [{time.perf_counter()-t0:.0f} s]", flush=True)
+
+    census, errors = scan(ROOT, progress=report)
     print(f"  {len(census.records):,} raw .bin files in {time.perf_counter()-t0:.0f} s")
     if errors:
         print(f"  {len(errors)} unreadable directories:")
