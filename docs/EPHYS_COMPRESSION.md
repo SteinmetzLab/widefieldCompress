@@ -22,7 +22,44 @@ Spatial differencing across channels exists but is **off** by default — their 
 didn't help, which matches the physics (neighbouring channels share reference noise but not much
 else at 30 kHz).
 
-## Measured on your data
+## Measured on sahale itself
+
+The box turns out to be the right place to run this: two Xeon Silver 4210R, **40 threads**, 273 GB
+RAM, numpy 1.22.4 already installed. No pip, but mtscomp is one pure-Python file and tqdm has no
+compiled parts, so 0.21 MB staged on the share is the whole install.
+
+4 GB prefix of `AL_0039/2025-09-30/6`, 385 ch @ 30 kHz, reading straight off the pool:
+
+| | |
+|---|---|
+| **local pool read** | **423 MB/s** (vs ~20 MB/s over SMB from the workstation while the widefield campaign runs) |
+| 8 threads | 29.7 MB/s, ×2.56 |
+| 16 threads | 39.0 MB/s, ×2.56 |
+| 32 threads | 46.6 MB/s, ×2.56 |
+
+**Two things to read off that.** The ratio is identical to the workstation measurement — ×2.56 —
+so it is a property of the data, not the machine. And **thread scaling is poor**: four times the
+threads bought 1.57×.
+
+The reason is visible in the run output. mtscomp's verify pass took **28, 30 and 29 seconds** in
+the three runs — flat, regardless of thread count, so it is effectively serial. At 32 threads that
+is a third of the wall clock not scaling at all:
+
+| | 4 GB in | rate |
+|---|---|---|
+| compress, 32 threads | 56 s | 71 MB/s |
+| verify (serial) | 29 s | 138 MB/s |
+| combined | 85.8 s | **46.6 MB/s** |
+
+At 46.6 MB/s the 94.79 TB corpus is **23.5 days**. Better than the 55 days it would take over SMB
+from the workstation, but well short of what the hardware should give.
+
+**The fix is almost certainly whole processes rather than more threads** — the same lesson the
+widefield side learned, where `--jobs` beat `--threads` by about 2× for the same core count. Each
+process gets its own serial verify, so they overlap instead of queueing.
+`scripts/sahale_mtscomp_parallel.py` measures this; it is staged on the share alongside the rest.
+
+## Measured on the workstation
 
 `AL_0039/2025-09-30/6`, Neuropixels 1.0, 385 channels @ 30 kHz, first 4 GB (173 s of recording):
 
