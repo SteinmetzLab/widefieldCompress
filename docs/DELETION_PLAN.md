@@ -64,11 +64,17 @@ receipts, every receipt claiming a byte-identical rebuild. Per-archive detail in
 That is the paperwork being consistent. It is *not* yet a licence to delete — conditions 6, 7 and
 8 are the ones that check the world rather than the records.
 
-**Conditions 6 and 8 have now been exercised for real**, on `test/2026-02-17/1`:
+**Conditions 6 and 8 have now been exercised for real**, on the four smallest archives:
 
 ```
-[1/4] SAFE   test/2026-02-17/1   re-verified today and the tar re-hashes to match
+[1/4] SAFE   test/2026-02-17/1      re-verified today and the tar re-hashes to match
+[2/4] SAFE   ZYE_0035/2021-07-17/1  re-verified today and the tar re-hashes to match
+[3/4] SAFE   AL_0033/2025-03-17/1   re-verified today and the tar re-hashes to match
+[4/4] SAFE   AL_0048/2026-06-11/4   re-verified today and the tar re-hashes to match
+SAFE to delete : 4 archives    REFUSED : 0    elapsed 788 s
 ```
+
+Four for four, spanning both archive flavours and five years of recordings.
 
 That is the full-strength statement: the `.wfz` still reconstructs its recorded hash *today*, and
 the tar sitting on the server right now hashes to that same value. Not inferred from a size match
