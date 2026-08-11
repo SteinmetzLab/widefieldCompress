@@ -24,7 +24,7 @@ trimmed_from = sum(int(r["bytes"]) for r in det) / 1e12
 trimmed_to = 2.13   # measured after the lab's trim
 wf_now_tb = census_tb - trimmed_from + trimmed_to
 
-rows = [json.loads(l) for l in Path("data/bulk.jsonl").read_text().splitlines() if l.strip()]
+rows = [json.loads(ln) for ln in Path("data/bulk.jsonl").read_text().splitlines() if ln.strip()]
 ok = [r for r in rows if r.get("ok")]
 done_src = sum(r["source_bytes"] for r in ok) / 1e12
 done_out = sum(r["output_bytes"] for r in ok) / 1e12
@@ -91,5 +91,5 @@ peak = wf_after + eph_todo_tb / 2.56
 print(f"    both copies coexist while each campaign runs: up to "
       f"+{wf_after + eph_todo_tb/2.56:.0f} TB at peak")
 print(f"      = ${peak*B2_PER_TB_MONTH:,.0f}/month extra while that lasts")
-print(f"    B2 keeps prior versions 60 days, so deletions keep billing for 2 months:")
+print("    B2 keeps prior versions 60 days, so deletions keep billing for 2 months:")
 print(f"      ~${(wf_saved + eph_todo_tb - eph_todo_tb/2.56)*B2_PER_TB_MONTH*2:,.0f} total")
