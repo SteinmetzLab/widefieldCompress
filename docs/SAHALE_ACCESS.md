@@ -1,5 +1,27 @@
 # Would admin access on sahale help? Mostly for one thing, and it is the important one.
 
+> **Update — the machine is much bigger than assumed, and numpy is already there.**
+>
+> ```
+> FreeBSD 13.1-RELEASE-p9  TrueNAS-13.0-U6.8
+> Intel(R) Xeon(R) Silver 4210R CPU @ 2.40GHz
+> hw.ncpu     40
+> hw.physmem  273,350,721,536      (273 GB)
+> numpy 1.22.4 on Python 3.9.18
+> ```
+>
+> Two Xeon Silver 4210R — 20 physical cores, **40 threads** — against the workstation's 16, and
+> **273 GB of RAM** against 64. Per-thread it is slower (2.4 GHz Cascade Lake versus a newer
+> desktop part), but in aggregate there is considerably more compute sitting on the box than on
+> the machine currently doing the work.
+>
+> And **numpy 1.22.4 is already installed**. mtscomp needs numpy, zlib (stdlib) and tqdm (pure
+> Python). Nothing to compile, no root required. **mtscomp can run on sahale today.**
+>
+> This changes the ephys recommendation — see [RUNNING_BOTH_CAMPAIGNS.md](RUNNING_BOTH_CAMPAIGNS.md).
+> It does **not** change the widefield one: `imagecodecs` still has no FreeBSD wheels, and that is
+> the blocker there regardless of how many cores are available.
+
 ## What we established earlier
 
 From `docs/RUNNING_THE_BULK_JOB.md` and `docs/BACKUP_AND_RETENTION.md`:

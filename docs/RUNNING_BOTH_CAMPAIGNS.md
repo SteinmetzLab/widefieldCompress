@@ -56,15 +56,65 @@ some other resource the widefield job leaves idle.
 
 Survivable, but it removes the slack that has been useful every time something went wrong.
 
-## Recommendation
+## Recommendation, superseded — see below
 
-**Build the ephys driver now; run it after.** Writing and testing the mtscomp batch harness costs
-nothing that the campaign needs — it is a few hundred lines and a handful of test files — and
-having it ready means the ephys run can start the day the widefield one ends, rather than starting
-to be written then.
+The original conclusion was: build the ephys driver now, run it after, because a second job on
+this workstation gets 20 MB/s. That still holds **for running it from this workstation**.
 
-The one thing that would change this: **another machine with its own path to the data.** mtscomp's
-dependency profile is unusually portable — pure Python, numpy, zlib, tqdm, with none of the
-compiled image codecs that made `wfcompress` impossible to run on the FreeBSD box. But it would
-still be reading the same sahale pool, so a second machine helps only if the bottleneck is this
-workstation, and the measurement above says it is not.
+## What changed: run it on sahale instead
+
+The machine turns out to be far better provisioned than assumed, and already has what mtscomp
+needs:
+
+```
+Intel(R) Xeon(R) Silver 4210R    hw.ncpu 40    hw.physmem 273 GB
+numpy 1.22.4 on Python 3.9.18
+```
+
+Two Xeon Silver 4210R: 20 physical cores, 40 threads, against this workstation's 16. Slower per
+thread, considerably more of them. And mtscomp's dependencies are numpy (present), zlib (stdlib)
+and tqdm (pure Python, installable to `~/.local` with no compiler and no root).
+
+That removes the thing that made the answer "no":
+
+| | from this workstation | on sahale |
+|---|---|---|
+| reads 94.79 TB over | **SMB, ~20 MB/s while the campaign runs** | the local pool |
+| CPU | competes for 16 cores with the widefield job | 40 threads of its own |
+| protocol overhead | one round trip per read | none |
+| dependencies | fine | numpy already there |
+
+The two campaigns would still contend for **the same disks** — that constraint does not go away.
+But they would no longer contend for CPU, for the network, or for the SMB layer, and the ephys
+reads become local rather than a ninth remote stream fighting eight others.
+
+**This is worth testing before assuming it works.** The test is small: compress a few GB of a real
+`.ap.bin` on sahale and time it. Everything below is read-only apart from writing a `.cbin` into a
+scratch directory in your home.
+
+```bash
+# one-time, into your home directory only - no root, nothing compiled
+python3.9 -m pip install --user mtscomp
+```
+
+```bash
+mkdir -p ~/mtstest && cd ~/mtstest
+SRC=/mnt/<pool>/Subjects/AL_0039/2025-09-30/6/p0_g0_t0.imec0/p0_g0_t0.imec0.ap.bin
+dd if="$SRC" of=sample.ap.bin bs=1m count=4000
+time python3.9 -m mtscomp sample.ap.bin sample.cbin sample.ch -n 385 -s 30000 -d int16
+ls -l sample.*
+```
+
+`ls /mnt` gives the pool name for the `SRC` line. The 4 GB `dd` and the `.cbin` land in your home
+directory; delete `~/mtstest` afterwards.
+
+What the timing tells us: if mtscomp reaches even 100–200 MB/s there, the whole ephys corpus is
+**one to two weeks** rather than the 55 days it would take over SMB from here — and it can run
+concurrently with the widefield campaign instead of after it.
+
+## The space argument still applies
+
+`Y:` has 114.5 TB free. Both campaigns to completion before any deletion: ~32 TB more `.wfz` plus
+~37 TB of `.cbin` is ~69 TB still to write, leaving ~46 TB. Running them concurrently reaches that
+low-water mark sooner, which is an argument for getting the deletion of at least the verified
+widefield tars moving — and that is gated on the B2 backlog.
