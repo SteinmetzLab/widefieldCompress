@@ -28,6 +28,25 @@ if not B2.exists():
     B2 = Path("b2")
 
 
+def sdk_bucket(bucket: str):
+    """An authorized bucket handle via b2sdk, reusing whatever `b2 account authorize` cached.
+
+    The CLI works, but every lookup is a fresh process paying a Python interpreter start plus a
+    b2sdk import -- several seconds each, and 212 of them. The SDK does the same job in one
+    process against one session. It reads the cached credentials itself; nothing here ever sees
+    the key.
+    """
+    try:
+        from b2sdk.v2 import B2Api, SqliteAccountInfo
+    except ImportError:
+        return None, "b2sdk not importable"
+    try:
+        api = B2Api(SqliteAccountInfo())
+        return api.get_bucket_by_name(bucket), ""
+    except Exception as e:  # noqa: BLE001 - any failure here means fall back to the CLI
+        return None, f"{type(e).__name__}: {e}"
+
+
 def b2_json(args: list[str]) -> tuple[dict | None, str]:
     """Run a b2 subcommand expecting JSON on stdout. Returns (parsed, error_text)."""
     try:
@@ -43,15 +62,48 @@ def b2_json(args: list[str]) -> tuple[dict | None, str]:
         return None, f"unparseable output: {e}"
 
 
-def server_to_key(path: str, share_root: str, prefix: str) -> str:
+def top_level_map(bucket: str) -> dict[str, str]:
+    """Case-insensitive map of the bucket's top-level names to their real spelling.
+
+    The Cloud Sync Task lowercased the top level: the share's ``Subjects`` is ``subjects`` in B2,
+    alongside ``code`` and ``alyx-backup``. Everything below keeps its case. Object names are
+    case-sensitive, so looking up ``Subjects/...`` silently finds nothing - which would read as
+    "the backup is missing" rather than "the name is wrong". Discovering the real spelling removes
+    that whole class of false alarm.
+    """
+    p = subprocess.run([str(B2), "ls", f"b2://{bucket}/"],
+                       capture_output=True, text=True, check=False)
+    out: dict[str, str] = {}
+    if p.returncode == 0:
+        for line in p.stdout.splitlines():
+            name = line.strip().rstrip("/")
+            if name and "/" not in name:
+                out[name.lower()] = name
+    return out
+
+
+def server_to_key(path: str, share_root: str, prefix: str,
+                  tops: dict[str, str] | None = None) -> str:
     """Map a share path to the object name the sync task would have given it.
 
-    The Cloud Sync Task mirrors the dataset, so the key is the path relative to the sync root with
-    forward slashes. ``--prefix`` covers the case where the task was pointed at a parent.
+    Anchoring on a known top-level name rather than on the share root, because the same file is
+    reachable as ``Y:\\Subjects\\...`` or ``\\\\sahale...\\data\\Subjects\\...`` and the batch log
+    contains both. Stripping a fixed prefix silently left ``Y:/Subjects/...`` as the object name
+    for half the corpus, which then read as "missing from the backup" - a false alarm that looks
+    exactly like the real thing this check is for.
     """
-    p = path.replace("\\", "/")
-    low, root = p.lower(), share_root.lower().replace("\\", "/")
-    rel = p[len(root):].lstrip("/") if low.startswith(root) else p.lstrip("/")
+    parts = [seg for seg in path.replace("\\", "/").split("/") if seg]
+    if tops:
+        for i, seg in enumerate(parts):
+            if seg.lower() in tops:
+                rel = "/".join([tops[seg.lower()], *parts[i + 1:]])
+                break
+        else:
+            rel = "/".join(parts)
+    else:
+        p = "/".join(parts)
+        root = share_root.lower().replace("\\", "/").strip("/")
+        rel = p[len(root):].lstrip("/") if p.lower().startswith(root) else p
     return prefix.strip("/") + "/" + rel if prefix.strip("/") else rel
 
 
@@ -77,24 +129,40 @@ def main() -> int:
         if bad in caps:
             print(f"  NOTE: this key can {bad}. A read-only key would be preferable.")
 
+    tops = top_level_map(args.bucket)
+    if tops:
+        print(f"top-level names in the bucket: {', '.join(sorted(tops.values()))}")
+
     rows = [r for r in csv.DictReader(Path(args.audit).open(encoding="utf-8"))
             if r["verdict"] == "SAFE"]
     if args.limit:
         rows = rows[: args.limit]
     print(f"checking {len(rows)} .wfz files against b2://{args.bucket}/\n", flush=True)
 
+    bucket, bucket_err = sdk_bucket(args.bucket)
+    print("lookups via b2sdk" if bucket else f"lookups via the CLI ({bucket_err})")
+
+    def size_of(key: str) -> tuple[int | None, str]:
+        if bucket is not None:
+            try:
+                return bucket.get_file_info_by_name(key).size, ""
+            except Exception as e:  # noqa: BLE001 - "not found" arrives as an exception too
+                return None, f"{type(e).__name__}: {str(e)[:120]}"
+        info, e = b2_json(["file", "info", f"b2://{args.bucket}/{key}"])
+        return (None, e) if e else (info.get("size"), "")
+
     def check(r: dict) -> dict:
-        key = server_to_key(r["wfz"], args.share_root, args.prefix)
+        key = server_to_key(r["wfz"], args.share_root, args.prefix, tops)
         out = {"session": r["session"], "wfz": r["wfz"], "b2_key": key,
                "local_bytes": r["wfz_bytes_now"], "b2_bytes": "", "present": "False",
                "size_matches": "False", "error": ""}
-        info, e = b2_json(["file", "info", f"b2://{args.bucket}/{key}"])
+        size, e = size_of(key)
         if e:
             out["error"] = e
             return out
         out["present"] = "True"
-        out["b2_bytes"] = str(info.get("size", ""))
-        out["size_matches"] = str(str(info.get("size")) == str(r["wfz_bytes_now"]))
+        out["b2_bytes"] = str(size)
+        out["size_matches"] = str(str(size) == str(r["wfz_bytes_now"]))
         return out
 
     with ThreadPoolExecutor(args.workers) as ex:

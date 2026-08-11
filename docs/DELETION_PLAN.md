@@ -81,8 +81,48 @@ the tar sitting on the server right now hashes to that same value. Not inferred 
 — both files read end to end. It costs about twenty minutes per archive while the campaign has the
 link, which is why it is a once-before-anything pass rather than a per-batch one.
 
-**Condition 7 — presence in Backblaze — remains unchecked, and cannot be checked from here.**
-See [B2_RESTORE_TEST.md](B2_RESTORE_TEST.md).
+### Condition 7, now checked — and it fails for most of the corpus
+
+With the read-only key in place (`scripts/check_b2_presence.py --bucket sahalebackup`):
+
+```
+.wfz in B2      :   89    7.89 TB
+.wfz NOT in B2  :  123    9.20 TB   <- the backlog
+                  46% of the bytes are backed up
+```
+
+**The originals are fine** — 25 of 25 sampled tars for those same sessions are present in B2. So
+nothing is at risk today. What is missing is the *replacement*. Delete one of those 123 tars and
+the only backed-up copy of that session's raw data goes with it, leaving the `.wfz` on one server.
+That is precisely the single-point-of-failure this condition exists to prevent, and it is
+currently true for **58% of everything compressed so far**.
+
+It is not sync lag. Every `.wfz` written 4–6 August is present; from 7 August the pattern breaks
+up, and **71 of the missing files are older than the newest one that did make it** — they had
+several nightly windows and were skipped.
+
+```
+2026-08-04  +++++++++++++
+2026-08-05  ++++++++++++++++
+2026-08-06  ++++++++++++++++++++++++++++++++
+2026-08-07  +.+.+.+...++...++..+..
+2026-08-08  ...+.+.+....+...+....+...+....++
+2026-08-09  ..+.+....+......++.+......+....+.
+2026-08-10  .......+...+............................
+2026-08-11  ........................
+```
+
+The timing lines up with the campaign reaching the large archives: `--largest-first` means that
+from about 7 August each finished session has been producing ~86 GB of `.wfz`, eight at a time —
+several hundred GB a day of new data for a nightly job to push. That is consistent with a sync
+that simply cannot keep up, but the Cloud Sync Task's configuration and logs are not visible from
+here (no sudo on sahale), so it is worth someone checking whether the job is being cut short,
+rate-limited, or erroring.
+
+**Consequence for this plan: the backup is now the pacing item, not the compression.** All ~50 TB
+of `.wfz` has to reach B2 before the corresponding tars can go, and deleting them will add 60 days
+of retained prior versions on top. Worth resolving before the deletion campaign starts rather than
+discovering it midway.
 
 ## What each tier costs
 
