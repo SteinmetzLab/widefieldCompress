@@ -56,9 +56,9 @@ def main():
     sample = op.join(args.workdir, "sample.ap.bin")
     want = int(args.gb * 1e9) // (2 * n_ch) * (2 * n_ch)
 
-    print("source  %s" % args.src)
-    print("        %d channels @ %g Hz, %.1f GB on the pool"
-          % (n_ch, rate, op.getsize(args.src) / 1e9))
+    print(f"source  {args.src}")
+    print(f"        {n_ch} channels @ {rate:g} Hz, "
+          f"{op.getsize(args.src)/1e9:.1f} GB on the pool")
 
     if not op.isfile(sample) or op.getsize(sample) != want:
         t0 = time.time()
@@ -72,8 +72,8 @@ def main():
                 left -= len(b)
         dt = time.time() - t0
         got = op.getsize(sample)
-        print("        copied %.2f GB locally in %.0f s = %.0f MB/s  <- local pool read rate"
-              % (got / 1e9, dt, got / 1e6 / dt))
+        print(f"        copied {got/1e9:.2f} GB locally in {dt:.0f} s = "
+              f"{got/1e6/dt:.0f} MB/s  <- local pool read rate")
     got = op.getsize(sample)
 
     import mtscomp
@@ -90,14 +90,14 @@ def main():
                          dtype="int16", n_threads=th, check_after_compress=True)
         dt = time.time() - t0
         csize = op.getsize(out) + op.getsize(outm)
-        print("  %7d  %6.1f  %8.1f  x%.2f" % (th, dt, got / 1e6 / dt, got / csize))
+        print(f"  {th:7d}  {dt:6.1f}  {got/1e6/dt:8.1f}  x{got/csize:.2f}")
         sys.stdout.flush()
 
     print("\n94.79 TB of raw ephys; at the best rate above that is:")
     print("  (divide 94.79e12 by the MB/s figure, /86400, for days)")
     if not args.keep:
         shutil.rmtree(args.workdir, ignore_errors=True)
-        print("\nremoved %s" % args.workdir)
+        print(f"\nremoved {args.workdir}")
 
 
 if __name__ == "__main__":
