@@ -106,7 +106,12 @@ def parse_meta(path: Path) -> tuple[int, float]:
     return n, rate
 
 
-def walk_parallel(root: Path, max_depth: int = 7, workers: int = 8,
+#: Depth to walk. Not a safety margin - a real measurement: stopping at 7 found 1,592 raw files
+#: and 92.16 TB, where 14 found 1,938 and 95.02 TB. 340 of the 346 missed files sat at depth 8.
+DEFAULT_MAX_DEPTH = 16
+
+
+def walk_parallel(root: Path, max_depth: int = DEFAULT_MAX_DEPTH, workers: int = 8,
                   errors: list[str] | None = None, progress=None,
                   keep: tuple[str, ...] = RAW_SUFFIXES) -> list[Path]:
     """Files under ``root`` matching ``keep``, listing directories concurrently, level by level.

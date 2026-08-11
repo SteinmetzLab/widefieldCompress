@@ -80,35 +80,42 @@ logging every file it touches to `fileEditLog.csv`, refusing to delete a raw fil
 compressed one has been verified. `wfcompress.lab.batch` is that harness and would need modest
 adaptation rather than a rewrite.
 
-## Census of Y: — 92 TB of raw ephys, about 56 TB reclaimable
+## Census of Y: — 95 TB of raw ephys, about 58–61 TB reclaimable
 
-`data/ephys_census_Y.csv`, from `scripts/run_ephys_census.py`. 1,592 raw `.bin` files,
-**92.16 TB**, across 183 subjects. Zero unreadable directories.
+`data/ephys_census_Y.csv`, from `scripts/run_ephys_census.py`. **1,938 raw `.bin` files,
+95.02 TB**, across 184 subjects. Zero unreadable directories.
 
 | band | files | size | |
 |---|---|---|---|
-| `.ap` | 1,185 | **90.03 TB** | 97.7% |
-| `.lf` | 397 | 2.12 TB | 2.3% |
-| `.nidq` | 10 | 0.004 TB | — |
+| `.ap` | 1,524 | **92.88 TB** | 97.8% |
+| `.lf` | 401 | 2.13 TB | 2.2% |
+| `.nidq` | 13 | 0.004 TB | — |
 
-**Only 11 files already have a `.cbin` beside them** — 0.22 TB raw. So essentially none of this
-has been compressed. Those 11 give a useful second data point: their `.cbin` files imply an
-**observed ×2.76**, a little better than the ×2.56 I measured on a fresh file.
+**Only 12 files already have a `.cbin` beside them** — 0.23 TB raw. So essentially none of this
+has been compressed. Those 12 give a useful second data point: their `.cbin` files imply an
+**observed ×2.82**, better than the ×2.56 measured directly on a fresh file.
 
 | at | kept | **reclaimed** |
 |---|---|---|
-| ×2.56 (measured here) | 35.91 TB | **56.03 TB** |
-| ×2.76 (observed on the 11 already done) | 33.30 TB | **58.64 TB** |
+| ×2.56 (measured here) | 37.03 TB | **57.76 TB** |
+| ×2.82 (observed on the 12 already done) | 33.66 TB | **61.13 TB** |
 
-Plus 0.22 TB from deleting the 11 raw files that already have a verified `.cbin`. Call the total
-**~56–59 TB**, i.e. comparable to the whole widefield campaign (68 TB) — and from 1,592 files
+Plus 0.23 TB from deleting the raw files that already have a verified `.cbin`. Call it
+**~58–61 TB**, i.e. comparable to the whole widefield campaign (68 TB) — and from 1,938 files
 rather than 1,120 archives, so the per-file overhead is lower.
 
-Concentration is mild: the top ten subjects hold ~20 TB between them, led by `JRS_0040` at
-2.68 TB. The largest single file is 452.7 GB (`JRS_0059/2026-02-13`).
+Concentration is mild: the top ten subjects hold ~21 TB between them, led by `IBL` at 2.85 TB and
+`JRS_0040` at 2.68 TB. The largest single file is 452.7 GB (`JRS_0059/2026-02-13`).
 
-**18 files (125 GB) have no `.meta`** and would need their channel count and sample rate supplied
+**26 files (224 GB) have no `.meta`** and would need their channel count and sample rate supplied
 by hand, or to be skipped.
+
+> **Depth matters — the first attempt undercounted by 22%.** Walking to depth 7 found 1,592 files
+> and 92.16 TB; going to depth 14 found **1,938 files and 95.02 TB**. Almost all of the difference
+> appeared at depth 8 (340 files). Nothing new turned up past depth 9, and the walk still had 64
+> unexplored directories at depth 15, so a small residual gap remains — but no `.bin` has appeared
+> that deep, so it is very unlikely to matter. The depth-7 result is kept as
+> `data/ephys_census_Y_depth7.csv` for comparison.
 
 ### On the walk itself
 
