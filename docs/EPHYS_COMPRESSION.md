@@ -80,8 +80,40 @@ logging every file it touches to `fileEditLog.csv`, refusing to delete a raw fil
 compressed one has been verified. `wfcompress.lab.batch` is that harness and would need modest
 adaptation rather than a rewrite.
 
-## Census
+## Census of Y: — 92 TB of raw ephys, about 56 TB reclaimable
 
-See `data/ephys_census_Y.csv` and `scripts/run_ephys_census.py`. The walk is slow — the share is
-576 subjects and 8,725 date folders, and traversal is pure SMB latency, made worse by the
-compression job holding the link. Results are recorded in the census summary when it completes.
+`data/ephys_census_Y.csv`, from `scripts/run_ephys_census.py`. 1,592 raw `.bin` files,
+**92.16 TB**, across 183 subjects. Zero unreadable directories.
+
+| band | files | size | |
+|---|---|---|---|
+| `.ap` | 1,185 | **90.03 TB** | 97.7% |
+| `.lf` | 397 | 2.12 TB | 2.3% |
+| `.nidq` | 10 | 0.004 TB | — |
+
+**Only 11 files already have a `.cbin` beside them** — 0.22 TB raw. So essentially none of this
+has been compressed. Those 11 give a useful second data point: their `.cbin` files imply an
+**observed ×2.76**, a little better than the ×2.56 I measured on a fresh file.
+
+| at | kept | **reclaimed** |
+|---|---|---|
+| ×2.56 (measured here) | 35.91 TB | **56.03 TB** |
+| ×2.76 (observed on the 11 already done) | 33.30 TB | **58.64 TB** |
+
+Plus 0.22 TB from deleting the 11 raw files that already have a verified `.cbin`. Call the total
+**~56–59 TB**, i.e. comparable to the whole widefield campaign (68 TB) — and from 1,592 files
+rather than 1,120 archives, so the per-file overhead is lower.
+
+Concentration is mild: the top ten subjects hold ~20 TB between them, led by `JRS_0040` at
+2.68 TB. The largest single file is 452.7 GB (`JRS_0059/2026-02-13`).
+
+**18 files (125 GB) have no `.meta`** and would need their channel count and sample rate supplied
+by hand, or to be skipped.
+
+### On the walk itself
+
+Two things to know if this is re-run. First, use `os.scandir`, not `Path.iterdir()` plus
+`.is_dir()` — the latter costs a separate stat per entry, which over SMB took the 576-entry root
+from 5 seconds to over four minutes. Second, the cost is concentrated in a handful of session
+folders holding hundreds of thousands of loose files; those take minutes each to list no matter
+how many threads are used, which is what makes the walk look hung when it is only slow.
