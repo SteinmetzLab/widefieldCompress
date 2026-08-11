@@ -62,7 +62,21 @@ receipts, every receipt claiming a byte-identical rebuild. Per-archive detail in
 `data/deletable_audit.csv`.
 
 That is the paperwork being consistent. It is *not* yet a licence to delete — conditions 6, 7 and
-8 have not been run, and those are the ones that check the world rather than the records.
+8 are the ones that check the world rather than the records.
+
+**Conditions 6 and 8 have now been exercised for real**, on `test/2026-02-17/1`:
+
+```
+[1/4] SAFE   test/2026-02-17/1   re-verified today and the tar re-hashes to match
+```
+
+That is the full-strength statement: the `.wfz` still reconstructs its recorded hash *today*, and
+the tar sitting on the server right now hashes to that same value. Not inferred from a size match
+— both files read end to end. It costs about twenty minutes per archive while the campaign has the
+link, which is why it is a once-before-anything pass rather than a per-batch one.
+
+**Condition 7 — presence in Backblaze — remains unchecked, and cannot be checked from here.**
+See [B2_RESTORE_TEST.md](B2_RESTORE_TEST.md).
 
 ## What each tier costs
 
