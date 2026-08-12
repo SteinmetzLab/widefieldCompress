@@ -54,10 +54,29 @@ is a third of the wall clock not scaling at all:
 At 46.6 MB/s the 94.79 TB corpus is **23.5 days**. Better than the 55 days it would take over SMB
 from the workstation, but well short of what the hardware should give.
 
-**The fix is almost certainly whole processes rather than more threads** — the same lesson the
-widefield side learned, where `--jobs` beat `--threads` by about 2× for the same core count. Each
-process gets its own serial verify, so they overlap instead of queueing.
-`scripts/sahale_mtscomp_parallel.py` measures this; it is staged on the share alongside the rest.
+**The fix is whole processes rather than more threads**, and it works almost perfectly. Measured
+on sahale, 2 GB sample, 4 threads inside each process:
+
+| processes | threads each | wall s | aggregate MB/s | corpus |
+|---|---|---|---|---|
+| 1 | 4 | 97.9 | 20.4 | 53.7 days |
+| 2 | 4 | 98.2 | 40.7 | 26.9 days |
+| 4 | 4 | 103.0 | 77.7 | 14.1 days |
+| **8** | **4** | **115.2** | **138.9** | **7.9 days** |
+
+**6.8× from an 8× increase in processes** — near-linear, where threads gave 1.57× for 4×. And the
+per-process verify now overlaps: 13 s in every run regardless of how many were going at once,
+exactly as predicted.
+
+Note the wall clock barely moves — 97.9 s for one process, 115.2 s for eight doing eight times the
+work. At 8 × 4 = 32 of 40 threads there is still headroom, so the knee has not been found; 10–12
+processes are worth trying.
+
+**And this was measured with the widefield campaign running**, reading the same pool over SMB. So
+139 MB/s is the contended figure, not a quiet-machine one. The pool served 423 MB/s in the read
+test, so at 139 MB/s the disks are still only a third committed.
+
+`scripts/sahale_mtscomp_parallel.py` produced this and is staged on the share.
 
 ## Measured on the workstation
 
@@ -113,9 +132,28 @@ than any ratio we would gain, and mtscomp already does the one thing that matter
 trip) properly.
 
 The one piece worth building is the same batch harness the widefield campaign has: resumable,
-logging every file it touches to `fileEditLog.csv`, refusing to delete a raw file until the
-compressed one has been verified. `wfcompress.lab.batch` is that harness and would need modest
-adaptation rather than a rewrite.
+logging every file it touches, refusing to delete a raw file until the compressed one has been
+verified.
+
+**It cannot be `wfcompress.lab.batch`, though.** That harness has to run where the data is, and on
+sahale that means **Python 3.9 on FreeBSD with no pip**. The existing package uses `X | None`
+annotations throughout and its `__init__` imports `imagecodecs`, which will never install there.
+So the ephys driver wants to be a **standalone, dependency-light script** staged on the share
+beside `mtscomp.py` — numpy and tqdm only, 3.9 syntax, no package install.
+
+What it needs, carried over from what the widefield campaign learned the hard way:
+
+- **8 or more worker processes**, not threads (see the scaling table above);
+- **resumable** from a JSONL log, with the resume check confirming the output still exists and is
+  the recorded size rather than trusting a log line;
+- **atomic output** — write `.cbin.partial-<pid>` and rename, so a killed run leaves nothing that
+  looks finished. Two widefield crashes left 297 GB and 163 GB of partials; only the naming
+  convention made them safe to reclaim;
+- **an append-only file log** of every file created, replaced or removed;
+- **no delete path at all.** Deleting the raw `.bin` is a separate, later, gated decision;
+- a **`--min-age-s` guard**, since data arrives from acquisition machines continuously;
+- skip anything that already has a `.cbin`, and record the 26 files with no `.meta` as refusals
+  rather than guessing their channel count.
 
 ## Census of Y: — 95 TB of raw ephys, about 58–61 TB reclaimable
 
