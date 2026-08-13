@@ -44,7 +44,12 @@ def note(log: Path, msg: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--python", default=str(Path(sys.executable).with_name("python.exe")))
+    # pythonw, not python: python.exe allocates a console window, and closing that window sends a
+    # control event that kills the driver outright. Observed on 2026-08-13 - the run exited
+    # 3221225786 (0xC000013A, STATUS_CONTROL_C_EXIT) after 35 h because someone closed the window
+    # it had popped up. The same signature, a clean exit with empty stderr, fits the earlier
+    # unexplained deaths. pythonw has no console to close.
+    ap.add_argument("--python", default=str(Path(sys.executable).with_name("pythonw.exe")))
     ap.add_argument("--log", default=r"D:\temp\wfc_supervisor.log")
     ap.add_argument("--out", default=r"D:\temp\wfc_run.out")
     ap.add_argument("--stop-file", default=r"D:\temp\wfc_stop")
