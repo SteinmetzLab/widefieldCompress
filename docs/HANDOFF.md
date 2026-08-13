@@ -39,6 +39,24 @@ the venv. Every PowerShell call needs `-NoProfile -NonInteractive` per the user'
 
 ---
 
+## 2a. First thing to run
+
+```powershell
+D:\temp\wfc-venv\Scripts\python.exe status.py
+```
+
+One command, read-only, reports both campaigns and the backup: how many archives and files are
+done, whether the processes are alive, when the last completion was, and the latest B2 snapshot.
+`--skip-ssh` if sahale is unreachable. Everything below is detail behind that.
+
+**Both campaigns survive this session ending.** The ephys job on sahale is parented to `init`
+(PID 1) — fully daemonised by `nohup`, and it has already survived several SSH sessions closing.
+The widefield supervisor on Windows has been orphaned from the shell that launched it. Neither is
+a child of any agent process. The one residual uncertainty is whether Windows tears down a job
+object on Claude Code exit; if the widefield job is ever found stopped for no reason, that is the
+first suspect, and the fix is to register the supervisor as a Scheduled Task (not done — it is
+persistent system configuration and needs the user's say-so).
+
 ## 3. What is running right now
 
 **The widefield campaign, under a supervisor.**
