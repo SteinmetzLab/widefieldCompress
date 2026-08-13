@@ -137,6 +137,29 @@ Verified 2026-08-13. The pool is `data/data`, 373 T with 111 T free (70% used), 
 
 A process sweep at 8/12/16/20 was requested but the result has not come back; 8 is known-good.
 
+**Dry-run on the box, 2026-08-13 — the driver works:**
+
+```
+1939 raw .bin found in 1630 s; 0 unreadable directories
+39 to skip:
+      26  no .meta, so channel count and sample rate are unknown
+      12  already has a .cbin and .ch
+       1  size 9619200000 is not a whole number of 385-channel int16 samples
+1900 to compress, 94.64 TB
+expect roughly 7.9 days at 139 MB/s
+```
+
+Two things to note. The **discovery walk takes 27 minutes even locally** — the same pathological
+session directories that made the SMB census slow — so it is not a hang. And the refuse-rather-
+than-guess rule earned its keep immediately: **one file is not a whole number of samples**
+(9,619,200,000 bytes at 385 channels), meaning it is truncated or its `.meta` is wrong. Someone
+should look at it before it is compressed.
+
+I also checked whether derived copies inside sorter-output directories were inflating the corpus.
+They are not: **3 files, 0.35 TB**, of which one is a real duplicate — a 347.5 GB
+`whole_train_artifact_removed_full` copy under `JRS_0057/2026-06-04/1/kilosort4/`. Not worth
+special handling.
+
 ---
 
 ## 6. Deletion — the gate, and what blocks it
