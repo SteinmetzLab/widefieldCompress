@@ -1,14 +1,14 @@
-﻿# wfcompress
+# wfcompress
 
 > **Picking this up cold? Read [docs/HANDOFF.md](docs/HANDOFF.md) first** — current state of both
-> campaigns, what is running, and the open decisions.
+> compression campaigns, what is running, and the open decisions.
 
 Lossless compression of tar archives that hold one uncompressed camera frame per member.
 
 Writing every frame as its own uncompressed TIFF (or headerless raw block) into a tar is a common
-way to get data off an acquisition machine quickly â€” the write is cheap and the next session can
+way to get data off an acquisition machine quickly — the write is cheap and the next session can
 start. It is also extremely wasteful to keep. This turns those archives into a form that is
-**typically 2.2â€“2.9Ã— smaller and rebuilds the original byte-for-byte**.
+**typically 2.2–2.9× smaller and rebuilds the original byte-for-byte**.
 
 Built for widefield calcium imaging in the [Steinmetz Lab](https://www.steinmetzlab.net), but the
 core knows nothing about widefield, or about any particular server.
@@ -25,7 +25,7 @@ wfcompress verify     widefield.tar restored.tar     # -> IDENTICAL
 ## Getting data out
 
 `decompress` rebuilds the archive, which is what you want to prove nothing was lost. It is not
-what you want in order to *use* the data â€” you get a 200 GB tar you then have to untar. `extract`
+what you want in order to *use* the data — you get a 200 GB tar you then have to untar. `extract`
 skips that step:
 
 ```bash
@@ -35,7 +35,7 @@ wfcompress extract widefield.wfz wf.bin --bin --frames 0 1000
 ```
 
 `--bin` writes exactly `rows * cols * n_frames * 2` bytes, frames concatenated in **acquisition
-order** â€” the same shape of file as a SpikeGLX `.ap.bin`, and the fastest thing to get into
+order** — the same shape of file as a SpikeGLX `.ap.bin`, and the fastest thing to get into
 analysis code:
 
 ```python
@@ -66,11 +66,11 @@ with WfzReader("widefield.wfz") as r:
 
 ## What it does
 
-1. **Splits each member** into its pixel block and its "shell" â€” the TIFF header and strip tables
+1. **Splits each member** into its pixel block and its "shell" — the TIFF header and strip tables
    around it. The shell is usually identical for every frame, so one copy is stored.
-2. **Strips always-zero low bits.** Scientific cameras routinely write 9â€“12 bit samples
+2. **Strips always-zero low bits.** Scientific cameras routinely write 9–12 bit samples
    left-shifted into a 16-bit word. Those hard-zero LSBs are expensive to leave in: on real
-   widefield data, handling this is the difference between **1.63Ã— and 2.76Ã—**. The shift is
+   widefield data, handling this is the difference between **1.63× and 2.76×**. The shift is
    detected per archive, recorded, and undone on read.
 3. **Encodes each frame with JPEG-LS** in lossless mode (`near=0`).
 4. **Verifies while writing.** Every frame is decoded again immediately after encoding and
@@ -89,13 +89,13 @@ Measured on real 16-bit widefield frames, after bit-shift normalisation:
 |---|---|---|---|
 | zstd-3, raw bytes | 1.48 | 40 | 229 |
 | TIFF deflate + predictor-2 | 1.69 | 45 | 143 |
-| zstd-3 + byte-plane shuffle | 1.81 | 160 | â€” |
+| zstd-3 + byte-plane shuffle | 1.81 | 160 | — |
 | JPEG-2000 reversible | 2.35 | 6.5 | 8.4 |
 | JPEG-XL lossless, effort 3 | 2.36 | 10 | 16 |
-| **JPEG-LS** | **2.37 â€“ 2.88** | **30** | **39** |
+| **JPEG-LS** | **2.37 – 2.88** | **30** | **39** |
 
-JPEG-XL ties on ratio and is 3Ã— slower to encode. Things that sound promising and are not:
-**temporal differencing hurts** (âˆ’4.5 %; it doubles the noise variance and destroys the spatial
+JPEG-XL ties on ratio and is 3× slower to encode. Things that sound promising and are not:
+**temporal differencing hurts** (−4.5 %; it doubles the noise variance and destroys the spatial
 smoothness the predictor relies on), **subtracting the mean image gains ~2 %** (JPEG-LS is exactly
 shift-invariant, so only the mean's *spatial structure* is worth anything, and the MED predictor
 already removes most of that), and **de-interleaving channels does nothing**. See
@@ -133,7 +133,7 @@ or `sys.path` manipulation appearing in the core.
 
 ## Requirements
 
-Python â‰¥ 3.10, `numpy`, `imagecodecs`, `tifffile`, `zstandard`.
+Python ≥ 3.10, `numpy`, `imagecodecs`, `tifffile`, `zstandard`.
 
 ## Limitations
 
