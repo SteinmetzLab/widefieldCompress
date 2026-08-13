@@ -32,7 +32,7 @@ does the ephys driver. Deletion is a separate gated decision — see §6.
 | the share | `Y:` = `\\sahale.biostr.washington.edu\data`; on sahale itself `/mnt/data/data` |
 | staged for sahale | `Y:\temp\pylibs\` — `mtscomp.py`, `tqdm/`, `ephys_compress.py`, two benchmarks |
 | B2 CLI | `D:\temp\wfc-venv\Scripts\b2.exe`, already authorized **read-only**, bucket `sahalebackup` |
-| SSH key for sahale | `C:\Users\nicks\.ssh\sahale_wfc` (public half may not be installed yet) |
+| SSH key for sahale | `C:\Users\nicks\.ssh\sahale_wfc` — **installed and working** |
 
 System `python` is **not** the project interpreter and lacks `imagecodecs`/`tifffile`. Always use
 the venv. Every PowerShell call needs `-NoProfile -NonInteractive` per the user's global rules.
@@ -126,6 +126,15 @@ There is no pip on sahale, which is why `mtscomp.py` and `tqdm` are staged as pl
 **no compiler and no root**. `wfcompress` itself can never run there — `imagecodecs` has no FreeBSD
 wheels.
 
+Reach the box like this — `BatchMode=yes` matters, so it fails rather than ever prompting for a
+password:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\sahale_wfc" -o BatchMode=yes 'NETID\nsteinme@sahale.biostr.washington.edu' 'uptime'
+```
+
+Verified 2026-08-13. The pool is `data/data`, 373 T with 111 T free (70% used), load average ~1.8.
+
 A process sweep at 8/12/16/20 was requested but the result has not come back; 8 is known-good.
 
 ---
@@ -142,14 +151,29 @@ is present in Backblaze**.
 Run the audit with `scripts/audit_deletable.py` (`--strict --rehash-tar` for 6 and 8).
 **Conditions 1–6 pass on everything tested.** Condition 7 does not:
 
-> **89 of 212 `.wfz` were in B2; 123 (9.20 TB) were not.** The original tars are all still there,
-> so nothing is at risk — but the *replacement* is missing for most, and deleting those tars would
-> leave a single copy. B2 is taking ~1.4 TB/day while the campaign produces ~2.4 TB/day, so the
-> backlog grows. **The backup, not the compression, is what gates deletion.**
+> **2026-08-13: 182 of 302 `.wfz` are in B2 (14.91 TB); 120 (7.87 TB) are not — 65% offsite, up
+> from 46% two days earlier.** The original tars are all still there, so nothing is at risk; what
+> is missing for those 120 is the *replacement*, and deleting their tars would leave a single copy.
 
-The user is asking the sahale admin about rclone `--transfers` in the TrueNAS Cloud Sync Task.
-`scripts/snapshot_b2.py --bucket sahalebackup` takes a dated snapshot and diffs against the
-previous one; run it periodically to see whether the backlog is draining.
+**The backlog is now draining, and this reverses an earlier conclusion.** On 11 August B2 was
+taking ~1.4 TB/day against ~2.4 TB/day of production, so I said the backup gated deletion. Since
+then it has moved 7.02 TB in two days — **~3.5 TB/day, faster than we produce** — and the backlog
+fell from 9.20 to 7.87 TB despite 82 new files being written:
+
+```
+2026-08-11   50 files   4,318 GB
+2026-08-12   40 files   3,199 GB
+2026-08-13   33 files   2,216 GB   (partial day)
+```
+
+It is also demonstrably back-filling older files, not just taking new ones. Whether the admin
+changed rclone `--transfers` or it simply caught up after the 8–9 August stall is unknown; worth
+asking. At this rate the ~34.8 TB still to upload finishes roughly in step with the campaign, so
+**B2 is no longer the binding constraint** — but keep watching it, because the earlier reading was
+wrong once already.
+
+`scripts/snapshot_b2.py --bucket sahalebackup` takes a dated snapshot into `data/b2_snapshots/`
+and diffs against the previous one. Run it every couple of days.
 
 **Step 0 has not been done**: delete one small tar, restore it from B2, confirm the restored bytes
 hash to `source_tar_sha256`. I recommend inverting it — confirm and hash-check the B2 copy *first*,
