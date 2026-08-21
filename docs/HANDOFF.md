@@ -1,7 +1,26 @@
 # Handoff: everything needed to pick this up cold
 
-Written 2026-08-13. Read this first, then `README.md`. Every other doc referenced here is in
-`docs/`.
+Written 2026-08-13, updated 2026-08-17. Read this first, then `README.md`. Every other doc
+referenced here is in `docs/`.
+
+> ## What changed since it was written (2026-08-17)
+>
+> - **Widefield: 326 of 1,120 archives**, 58.18 TB -> 24.20 TB, x2.40, **326/326 byte-identical**.
+>   794 archives / 61.60 TB remain.
+> - **The offsite backup has fully caught up: 326/326 `.wfz` in B2, 100%, backlog zero.**
+>   §6 condition 7 now passes on everything compressed. The backup is no longer the constraint;
+>   see the banner in `B2_THROUGHPUT.md` for the caveat on that claim.
+> - **The campaign was stopped for 76% of 08-13 to 08-17** — the sahale outage, then a second
+>   silent death on 08-14 21:07 that nobody noticed for 2.8 days. Restarted 08-17 17:04.
+>   Full timeline and the unapplied Scheduled Task fix: `DOWNTIME_AND_PERSISTENCE.md`.
+> - **Ephys ran for 34 minutes on 08-13, completed zero files, and took the file server down.**
+>   Do not restart it while widefield is running. It left 121.4 GB of stale `.cbin.partial-*` on
+>   sahale, listed in `DOWNTIME_AND_PERSISTENCE.md`.
+> - **Step 0 of the deletion gate is largely done and it passed.** The B2 copy was downloaded and
+>   proven to rebuild the original tars byte-for-byte — 3 sessions, both code paths, 9/9 checks.
+>   Reusable: `scripts/b2_restore_test.py`. No deletion was needed or performed.
+> - **The B2 undo window is 30 days, not the 60 the docs assumed** (`daysFromHidingToDeleting: 30`,
+>   read from the API). Halves the review budget and the retention cost. See `B2_RESTORE_TEST.md`.
 
 ---
 
@@ -12,8 +31,8 @@ categories are stored uncompressed and are pure waste:
 
 | | size | plan | status |
 |---|---|---|---|
-| widefield `widefield.tar` | 119.4 TB across 1,120 archives | JPEG-LS → `.wfz`, ×2.40 | **campaign running, 27% done** |
-| raw SpikeGLX `*.bin` | 95.0 TB across 1,938 files | mtscomp → `.cbin`, ×2.56 | **driver built, not started** |
+| widefield `widefield.tar` | 119.4 TB across 1,120 archives | JPEG-LS → `.wfz`, ×2.40 | **campaign running, 29% done** |
+| raw SpikeGLX `*.bin` | 95.0 TB across 1,938 files | mtscomp → `.cbin`, ×2.56 | **started 08-13, overloaded sahale, stopped** |
 
 Together ~128 TB reclaimable, worth **~$10,700/year** of Backblaze at the confirmed $6.95/TB/month.
 See `SPACE_AND_COST.md`.
@@ -190,7 +209,9 @@ special handling.
 is present in Backblaze**.
 
 Run the audit with `scripts/audit_deletable.py` (`--strict --rehash-tar` for 6 and 8).
-**Conditions 1–6 pass on everything tested.** Condition 7 does not:
+**Conditions 1–6 pass on everything tested. As of 2026-08-17 condition 7 passes too — all 326
+`.wfz` are in B2. The paragraph below is the 08-13 state, kept because it shows how fast this
+reading has changed twice.**
 
 > **2026-08-13: 182 of 302 `.wfz` are in B2 (14.91 TB); 120 (7.87 TB) are not — 65% offsite, up
 > from 46% two days earlier.** The original tars are all still there, so nothing is at risk; what

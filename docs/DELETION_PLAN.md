@@ -1,5 +1,19 @@
 # Deleting the original tars: a proposal
 
+> **Two updates, 2026-08-17.**
+>
+> 1. **Condition 7 now passes on everything compressed** — all 326 `.wfz` are in B2 (24.20 TB,
+>    100%). The backup is no longer what blocks this plan.
+> 2. **Every "60 days" in this document is wrong; the live B2 rule is `daysFromHidingToDeleting:
+>    30`.** The undo window after a deletion reaches B2 is **one month, not two**, so the step 4
+>    review budget halves and the retention-lag cost halves to ~$435. Details and evidence in
+>    `B2_RESTORE_TEST.md`.
+>
+> Step 0 is now **partly done**: the offsite copy has been downloaded and proven to rebuild the
+> original archives byte-for-byte on three sessions covering both code paths (9 of 9 checks
+> passed). What is still untested is whether a server-side delete propagates to B2 as a *hide*
+> at all — which depends on the unresolved SYNC-vs-COPY question in `BACKUP_AND_RETENTION.md`.
+
 Nothing has been deleted. This document proposes how to do it, what it would cost, and what I
 would want in place first. `wfcompress` still has **no delete path anywhere** — the batch driver
 never had one, by design.

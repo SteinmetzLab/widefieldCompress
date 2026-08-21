@@ -1,19 +1,55 @@
 # Backblaze B2: what happens to the bill when we delete
 
-Status: **partly answered.** The bucket's retention policy is known. What is *not* yet known is
-whether deletions on the server propagate to B2 at all — which matters far more.
+Status: **answered, 2026-08-17.** Retention is 30 days (see §1). And the question that mattered
+far more — whether deletions propagate to B2 at all — is now settled: **the `Subjects` task is
+`transfer_mode: SYNC`**, so they do.
+
+> **SYNC confirmed 2026-08-17**, read from `tasks_cloudsync` in `/data/freenas-v1.db` via
+> `scripts/sahale_read_cloudsync.py`. Per task:
+>
+> | task | path | direction | mode |
+> |---|---|---|---|
+> | Backup to Backblaze - Subjects/ | `/mnt/data/data/Subjects` | PUSH | **SYNC** |
+> | Backup to Backblaze - /Code | `/mnt/data/data/Code` | PUSH | SYNC |
+> | Backup to Backblaze - Alyx-backup/ | `/mnt/data/data/alyx-backup` | PUSH | **COPY** |
+>
+> The modes differ per task, so check the right one: it is the `Subjects` task that governs the
+> tars. Corroborating evidence from the bucket itself — when the lab trimmed
+> `ZYE_0098/2025-12-17/2/widefield.tar` from 143.1 to 93.5 GB on 08-09, the sync uploaded the new
+> version on 08-16 and **kept the old one as a prior version**. Both are billed until the 30-day
+> clock expires.
+>
+> So a deleted tar will be hidden in B2, retained 30 days, then permanently removed, and billing
+> stops at that point. That is the intended behavior and no B2-side deletion step is needed.
 
 ---
 
-## 1. Retention: answered — 60 days
+## 1. Retention: answered — ~~60~~ **30 days**
 
-The bucket's Lifecycle Settings are set to *"Keep prior versions for this number of days: 60"*,
-i.e. a lifecycle rule of `daysFromHidingToDeleting: 60` over the whole bucket.
+> **Updated 2026-08-17. This is now 30 days, and that is deliberate.** Nick changed the rule from
+> 60 to 30 in anticipation of the tar deletions; the live value read back from the API is
+> `daysFromHidingToDeleting: 30`, bucket-wide, at bucket revision 4. Nothing was misconfigured —
+> the doc simply predates the change.
+>
+> Consequences: every "60 days" below and in `DELETION_PLAN.md` should be read as **30**, and cost
+> figures derived from it halve (the ~$870 one-time retention lag becomes **~$435**). The
+> recommendation in §2 to leave it at 60 is superseded by that decision.
+>
+> **Why not go to 1 day and reclaim the billing immediately?** Nick's reasoning, and it is right:
+> the window is not there for *these* tars, whose redundancy is proven. It is there for the
+> unrelated accident nobody has had yet — some other file deleted or corrupted by mistake
+> elsewhere in the lab. Shrinking it to 1 day to save ~$435 once would remove the only protection
+> against that class of event across the entire ~200 TB `Subjects` tree. 30 days is the
+> compromise, and waiting 30 days for the billing to clear is fine.
+
+The bucket's Lifecycle Settings were read as *"Keep prior versions for this number of days: 60"*,
+i.e. a lifecycle rule of `daysFromHidingToDeleting: 60` over the whole bucket. **The API now
+reports 30.**
 
 So when a file is deleted on the server and that deletion reaches B2, the prior version is retained
-for **60 days** and then permanently removed. Storage billing stops at that point, not at deletion.
+for **30 days** and then permanently removed. Storage billing stops at that point, not at deletion.
 
-**Consequence: savings lag deletion by two months.** That is the whole cost of this setting.
+**Consequence: savings lag deletion by one month.** That is the whole cost of this setting.
 
 ## 2. Should we shorten it for the widefield paths? No.
 
