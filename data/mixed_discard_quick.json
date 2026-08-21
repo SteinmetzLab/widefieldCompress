@@ -1,0 +1,191 @@
+{
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0023\\2023-10-27\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 138856,
+  "tar_bytes": 87872522240
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0023\\2023-10-27\\4\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 56406,
+  "tar_bytes": 35695523840
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0030\\2024-01-23\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 107281,
+  "tar_bytes": 67890851840
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0038\\2025-05-02\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 237616,
+  "tar_bytes": 150371010560
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0039\\2025-09-30\\6\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 29159,
+  "tar_bytes": 18452756480
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0041\\2026-04-22\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 29969,
+  "tar_bytes": 18965350400
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_004\\2025-10-22\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 136604,
+  "tar_bytes": 86447390720
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_004\\2025-11-14\\4\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 182446,
+  "tar_bytes": 115457669120
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_004\\2025-11-17\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 191233,
+  "tar_bytes": 121018368000
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_005\\2026-02-06\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 118124,
+  "tar_bytes": 74752655360
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-02-25\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 243808,
+  "tar_bytes": 154289510400
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-02-28\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 239222,
+  "tar_bytes": 151387340800
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-03-02\\2\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 227198,
+  "tar_bytes": 143778170880
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-03-03\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 228206,
+  "tar_bytes": 144416061440
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-04-06\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 191421,
+  "tar_bytes": 121137336320
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-04-09\\2\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 119419,
+  "tar_bytes": 75572172800
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_011\\2026-04-13\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 196078,
+  "tar_bytes": 124084439040
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_012\\2026-04-21\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 197404,
+  "tar_bytes": 124923576320
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\FD_012\\2026-04-23\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 194063,
+  "tar_bytes": 122809282560
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\ZYE_0098\\2025-12-17\\2\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 147816,
+  "tar_bytes": 93542696960
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\ZYE_0098\\2025-12-18\\1\\widefield.tar": {
+  "all_verified": false,
+  "discard_bytes": 0,
+  "discardable": [],
+  "error": "no non-frame members; this archive is not mixed",
+  "frame_bytes": 631826,
+  "n_frames": 159693,
+  "tar_bytes": 101058846720
+ }
+}
