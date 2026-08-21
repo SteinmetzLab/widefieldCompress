@@ -266,6 +266,47 @@ def test_a_check_over_a_different_mtime_is_not_reusable(tmp_path, monkeypatch):
     assert dt._recent_check("S/1/1", 100, 12345, 24.0) is None
 
 
+def test_a_cheap_check_does_not_authorise_a_delete_by_default(tmp_path, monkeypatch):
+    """The safe default: only a full 11-condition check authorises removal. A cheap-tier check is
+    a screening pass and says nothing about whether the .wfz still decodes."""
+    _ledger(tmp_path, monkeypatch, [{**_row(), "tier": "cheap"}])
+    assert dt._recent_check("S/1/1", 100, 12345, 24.0) is None
+
+
+def test_a_cheap_check_authorises_only_when_explicitly_allowed(tmp_path, monkeypatch):
+    _ledger(tmp_path, monkeypatch, [{**_row(), "tier": "cheap"}])
+    assert dt._recent_check("S/1/1", 100, 12345, 24.0, allow_cheap=True) is not None
+
+
+def test_a_full_check_authorises_under_either_setting(tmp_path, monkeypatch):
+    _ledger(tmp_path, monkeypatch, [{**_row(), "tier": "full"}])
+    assert dt._recent_check("S/1/1", 100, 12345, 24.0) is not None
+    assert dt._recent_check("S/1/1", 100, 12345, 24.0, allow_cheap=True) is not None
+
+
+def test_a_check_predating_tiers_counts_as_full(tmp_path, monkeypatch):
+    """Ledger rows written before --tier existed have no tier field; they were all full checks
+    and must keep authorising, or the four already-verified archives would silently stop."""
+    row = _row()
+    assert "tier" not in row
+    _ledger(tmp_path, monkeypatch, [row])
+    assert dt._recent_check("S/1/1", 100, 12345, 24.0) is not None
+
+
+def test_delete_refuses_a_cheap_check_without_the_flag(tree, monkeypatch, capsys):
+    root, session, d = tree
+    st = (d / "widefield.tar").stat()
+    _ledger(root, monkeypatch, [{
+        "checked_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "session": session, "all_pass": True, "tier": "cheap",
+        "tar_bytes_now": st.st_size, "tar_mtime": int(st.st_mtime)}])
+    rc = dt.main(["--bucket", "testbucket", "--server", str(root),
+                  "delete", session, "--confirm", session])
+    assert rc == 2
+    assert "no passing full check" in capsys.readouterr().out
+    assert (d / "widefield.tar").exists()
+
+
 def test_another_sessions_check_is_not_reusable(tmp_path, monkeypatch):
     _ledger(tmp_path, monkeypatch, [_row(session="OTHER/1/1")])
     assert dt._recent_check("S/1/1", 100, 12345, 24.0) is None
@@ -294,7 +335,7 @@ def test_delete_refuses_with_no_prior_check(tree, monkeypatch, capsys):
     rc = dt.main(["--bucket", "testbucket", "--server", str(root),
                   "delete", session, "--confirm", session])
     assert rc == 2
-    assert "no passing `check`" in capsys.readouterr().out
+    assert "no passing full check" in capsys.readouterr().out
     assert (d / "widefield.tar").exists()
 
 

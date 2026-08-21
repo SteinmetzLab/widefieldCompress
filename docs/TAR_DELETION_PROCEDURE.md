@@ -333,6 +333,45 @@ is not a plan. Tier it:
 The first deletion gets all eleven, plus the post-delete offsite proof. That is the point of doing
 one first.
 
+## Tiers: what authorises a deletion
+
+The full gate is ~155 s per GB of tar, so on a 161 GB median archive it is 6.5 hours and on the
+whole corpus it is not a plan. Two tiers, and **which one authorised each deletion is recorded**:
+
+```powershell
+# tier 1 - C1-C5 and C7 only, seconds per archive
+python scripts/delete_tar.py --bucket sahalebackup check SESSION --tier cheap
+python scripts/delete_tar.py --bucket sahalebackup delete SESSION --confirm SESSION --allow-cheap
+
+# tier 2 - all eleven, hours per archive
+python scripts/delete_tar.py --bucket sahalebackup check SESSION
+python scripts/delete_tar.py --bucket sahalebackup delete SESSION --confirm SESSION
+```
+
+**`--allow-cheap` has to be asked for.** Without it, `delete` accepts only a full check and says
+`refusing: no passing full check for ...`. A cheap check is a screening pass and says nothing about
+whether the `.wfz` still decodes, so it must not silently authorise removal. Ledger rows written
+before tiers existed count as full, so the four archives verified on 08-18/21 keep their standing.
+`data/deletions.jsonl` records `check_tier` for every deletion, so anyone can later separate the
+tars removed on full evidence from those removed on screening evidence.
+
+### What the cheap tier does and does not establish
+
+C2 and C7 compare **sizes**, not content. A `.wfz` that is the right size but corrupt in both
+places would pass. What stands behind that gap:
+
+- every `.wfz` was fully verified at compression time, and the campaign is 533/533 byte-identical;
+- ZFS checksums every block and the pool reports zero errors, so silent rot on the server would be
+  reported by the storage layer rather than discovered here;
+- B2 verifies SHA-1 on upload;
+- the 31-day ZFS snapshot window makes any deleted tar locally recoverable for a month;
+- and empirically the deep checks have run on four archives - 43 measured conditions plus one
+  derived - with no surprises.
+
+**Pace the batches.** The argument is not that a batch is individually risky; it is that deleting
+everything in one week means any systemic problem surfaces after the ZFS window has closed on all
+of it at once. Deleting gradually means a problem shows up while most tars still exist.
+
 ## The procedure
 
 ```powershell

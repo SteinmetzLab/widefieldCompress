@@ -400,27 +400,40 @@ def report(conds: list[Cond]) -> bool:
 # --------------------------------------------------------------------------- subcommands
 
 def cmd_check(args) -> int:
+    cheap = getattr(args, "tier", "full") == "cheap"
     P = load_paths(args)
     print(f"session {P['session']}\ntar     {P['tar']}\n"
-          f"b2      b2://{args.bucket}/{P['b2_tar']}\n")
-    conds, facts = run_gate(args, P)
+          f"b2      b2://{args.bucket}/{P['b2_tar']}\ntier    {'cheap' if cheap else 'full'}\n")
+    conds, facts = run_gate(args, P, cheap_only=cheap)
+    if cheap:
+        conds = [c for c in conds if c.cheap]
     every = report(conds)
     jsonl_append(CHECK_LEDGER, {
         "checked_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "session": P["session"], "all_pass": every, "host": platform.node(),
+        "tier": "cheap" if cheap else "full",
         "conditions": {c.key: {"ok": c.ok, "note": c.note, "seconds": round(c.seconds, 1),
                                "derived": c.derived} for c in conds},
         **facts,
     })
     print(f"\nverdict appended to {CHECK_LEDGER}")
     if every:
+        extra = " --allow-cheap" if cheap else ""
         print("\nNothing has been deleted. To delete, run the same session through:\n"
               f"  python scripts/delete_tar.py --bucket {args.bucket} delete {P['session']} "
-              f"--confirm {P['session']}")
+              f"--confirm {P['session']}{extra}")
     return 0 if every else 1
 
 
-def _recent_check(session: str, tar_bytes: int, tar_mtime: int, max_age_h: float) -> dict | None:
+def _recent_check(session: str, tar_bytes: int, tar_mtime: int, max_age_h: float,
+                  allow_cheap: bool = False) -> dict | None:
+    """The most recent passing check over these exact bytes, or None.
+
+    ``allow_cheap`` has to be asked for. The default is that only a full 11-condition check
+    authorises a deletion; a cheap-tier check is a screening pass and says nothing about whether
+    the .wfz still decodes. Batch deletion deliberately opts in, and the tier that authorised each
+    deletion is recorded in the ledger so it can be audited later.
+    """
     if not CHECK_LEDGER.exists():
         return None
     best = None
@@ -429,6 +442,9 @@ def _recent_check(session: str, tar_bytes: int, tar_mtime: int, max_age_h: float
             continue
         r = json.loads(line)
         if r.get("session") != session or not r.get("all_pass"):
+            continue
+        # records written before tiers existed were all full checks
+        if r.get("tier", "full") == "cheap" and not allow_cheap:
             continue
         age = (datetime.now(timezone.utc)
                - datetime.fromisoformat(r["checked_utc"])).total_seconds() / 3600
@@ -453,13 +469,18 @@ def cmd_delete(args) -> int:
         return 2
     st = P["tar"].stat()
 
-    prior = _recent_check(P["session"], st.st_size, int(st.st_mtime), args.max_check_age_h)
+    allow_cheap = getattr(args, "allow_cheap", False)
+    prior = _recent_check(P["session"], st.st_size, int(st.st_mtime), args.max_check_age_h,
+                          allow_cheap=allow_cheap)
     if prior is None:
-        print(f"refusing: no passing `check` for {P['session']} within "
-              f"{args.max_check_age_h} h over a tar of this exact size and mtime.\n"
-              f"Run:  python scripts/delete_tar.py check {P['session']} --bucket {args.bucket}")
+        print(f"refusing: no passing {'cheap-or-full' if allow_cheap else 'full'} check for "
+              f"{P['session']} within {args.max_check_age_h} h over a tar of this exact size "
+              f"and mtime.\n"
+              f"Run:  python scripts/delete_tar.py --bucket {args.bucket} check {P['session']}")
         return 2
-    print(f"using the check from {prior['checked_utc']} (all 11 conditions passed)\n")
+    tier = prior.get("tier", "full")
+    print(f"using the {tier} check from {prior['checked_utc']} "
+          f"({'all 11 conditions' if tier == 'full' else 'C1-C5 and C7'} passed)\n")
 
     print("re-running the cheap conditions immediately before deleting ...")
     conds, facts = run_gate(args, P, cheap_only=True)
@@ -483,7 +504,8 @@ def cmd_delete(args) -> int:
         "session": P["session"], "tar": str(P["tar"]), "tar_bytes": st.st_size,
         "source_tar_sha256": facts.get("source_tar_sha256"),
         "wfz": str(P["wfz"]), "wfz_bytes": facts.get("wfz_bytes_now"),
-        "check_from": prior["checked_utc"], "host": platform.node(), "verified_gone": gone,
+        "check_from": prior["checked_utc"], "check_tier": prior.get("tier", "full"),
+        "host": platform.node(), "verified_gone": gone,
     })
     print(f"  recorded in {DELETE_LEDGER}")
     print("\nNext: after the 22:00 Cloud Sync run, prove the offsite copy survived the delete:\n"
@@ -634,14 +656,18 @@ def main(argv=None) -> int:
     ap.add_argument("--keep", action="store_true", help="retain downloads for inspection")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("check", help="run all 11 pre-delete conditions; read-only")
+    c = sub.add_parser("check", help="run the pre-delete conditions; read-only")
     c.add_argument("session")
+    c.add_argument("--tier", choices=("full", "cheap"), default="full",
+                   help="full runs all 11 conditions; cheap runs only C1-C5 and C7")
     c.set_defaults(func=cmd_check)
 
     d = sub.add_parser("delete", help="delete the tar, if a recent check passed")
     d.add_argument("session")
     d.add_argument("--confirm", required=True, help="repeat the session name exactly")
     d.add_argument("--max-check-age-h", type=float, default=24.0)
+    d.add_argument("--allow-cheap", action="store_true",
+                   help="accept a cheap-tier check as authorisation (default: full checks only)")
     d.set_defaults(func=cmd_delete)
 
     o = sub.add_parser("offsite", help="after the sync: prove B2 hid it and can restore it")
