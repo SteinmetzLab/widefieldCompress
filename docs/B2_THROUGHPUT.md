@@ -91,15 +91,57 @@ and the link counters via `netstat`. **Nothing was changed.**
 > dutifully backing up to B2. Deleting them locally removes that waste. They are temp files with no
 > referent; the ephys driver would clear them on its next run anyway.
 >
-> ### And the "stall" was probably not a stall
+> ### Where the 73 hours actually went: 97% transfer, 12 minutes checking
 >
-> The 73-hour run did **5,988,402 checks** to move 945 transfers. That is the CPU burn - rclone
-> comparing ~6 million objects with `--fast-list`, single-threaded. A run of this length is normal
-> for this configuration, not a hang, which supports Nick's read that B2 "eventually goes through".
-> **Correction to what follows:** I could not distinguish a slow trickle from a true stall, because
-> B2 upload traffic is unresolvable against the 118 MB/s of SMB the compression campaign generates.
-> The one measurement that would settle it is the B2 console's "Uploaded Parts Size" on the
-> Unfinished Large Files page, sampled twice a few minutes apart.
+> **Correction.** I first said "nearly all" of the run was spent checking ~6 million objects. That
+> was an inference from the counts, not a measurement, and it is **wrong**. B2 records the start
+> time of every large upload, so the phases can be bounded directly:
+>
+> ```
+> run 69940: 08-18 05:00 -> 08-21 06:20 UTC (73.3 h)
+>   run start -> first upload start     0.2 h    listing / checking
+>   first -> last upload start         71.4 h    transfer phase   (97% of the run)
+>   last upload start -> run end        1.8 h    tail
+>   130 .wfz, 6.72 TB, averaging 26 MB/s
+> ```
+>
+> So **checking cost 12 minutes** and transfer cost 71 hours. `--fast-list` is not a problem and the
+> earlier suggestion to drop it is withdrawn - it would likely make listing slower, and listing is
+> 0.3% of the run either way.
+>
+> The 61.6 h that sit inside gaps longer than an hour between *upload starts* are not idleness:
+> with `--transfers 20` a new upload only starts when a slot frees, so long gaps mean the 20
+> in-flight transfers are each crawling. At 26 MB/s aggregate over 20 slots, a ~50 GB `.wfz` takes
+> about 11 hours - which is exactly the "19 files open for 33 hours" observed on 08-22.
+>
+> ### The path is the limit, and too much concurrency is making it worse
+>
+> Measured from this workstation on a Saturday morning, streaming real objects back out of B2:
+>
+> | streams | aggregate | per stream |
+> |---|---|---|
+> | 1 | 21.6 MB/s | 21.6 MB/s |
+> | 4 | **45.5 MB/s** | 11.4 MB/s |
+>
+> Parallelism helps sublinearly - 4x the streams for 2.1x the throughput - so there is a soft
+> ceiling, not a per-stream cap. **But note that 4 plain HTTPS streams beat rclone's 26 MB/s across
+> roughly 80 streams** (`--transfers 20` x default `--b2-upload-concurrency 4`). Caveat: downloads
+> and uploads are different directions and this was measured from the workstation, not sahale. Still,
+> the direction is clear enough to act on: 20 transfers is too many.
+>
+> **What this rules out:** splitting the task by prefix will not add bandwidth (it does usefully
+> isolate failures, which is a separate argument for it), and no rclone setting will produce a step
+> change while the path gives ~20-45 MB/s.
+>
+> **What it points at:** 21.6 MB/s single-stream on a **Saturday** - so not weekday campus
+> congestion - between a 10 GbE server and Backblaze is low. Something is shaping to roughly
+> 200-400 Mbps, and the 128 MB/s sustained for 2.8 h on 08-10 proves the path can do five times
+> better. That is a question for UW networking and/or Backblaze support, and it is the only thing
+> that would change the order of magnitude.
+>
+> **Still unexplained:** why rclone burns ~90-100% of a core to move 26 MB/s. It is not the transfer
+> bottleneck, since the path accounts for the rate, but it is more CPU than 26 MB/s of TLS and SHA-1
+> should need. Possibly re-reading and re-hashing chunks on retries.
 >
 > ## 2026-08-22: the sync has stalled outright - zero completed uploads in 25 hours
 >

@@ -3780,3 +3780,46 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-22T18:28:06+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-07\1\widefield.wfz.README.md,3075,DESKTOP-KH3D2OM,56608,
 2026-08-22T18:28:08+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-07\1\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,56608,
 2026-08-22T18:28:09+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-07\1\widefield.wfz.receipt.json,1507,DESKTOP-KH3D2OM,56608,
+2026-08-22T18:36:56+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0098\2025-12-16\1\widefield.wfz.partial-45944,0,DESKTOP-KH3D2OM,45944,temporary output
+2026-08-22T18:38:51+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz.partial-56608,0,DESKTOP-KH3D2OM,56608,temporary output
+2026-08-22T18:40:38+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-08\2\widefield.wfz.partial-54216,39946722288,DESKTOP-KH3D2OM,54216,renamed into place
+2026-08-22T18:40:39+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-08\2\widefield.wfz,39946722288,DESKTOP-KH3D2OM,54216,
+2026-08-22T18:49:35+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-24\1\widefield.wfz.partial-52932,35584205943,DESKTOP-KH3D2OM,52932,renamed into place
+2026-08-22T18:49:35+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-24\1\widefield.wfz,35584205943,DESKTOP-KH3D2OM,52932,
+2026-08-22T19:03:30+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-01-20\3\widefield.wfz.README.md,2894,DESKTOP-KH3D2OM,34736,
+2026-08-22T19:03:32+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-01-20\3\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,34736,
+2026-08-22T19:03:33+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-01-20\3\widefield.wfz.receipt.json,1504,DESKTOP-KH3D2OM,34736,
+2026-08-22T19:11:37+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-03-04\1\widefield.wfz.partial-34736,0,DESKTOP-KH3D2OM,34736,temporary output
+2026-08-22T19:29:22+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-19\1\widefield.wfz.partial-16236,42207487363,DESKTOP-KH3D2OM,16236,renamed into place
+2026-08-22T19:29:22+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-19\1\widefield.wfz,42207487363,DESKTOP-KH3D2OM,16236,
+2026-08-22T19:30:53+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0090\2024-08-18\3\widefield.wfz.README.md,3075,DESKTOP-KH3D2OM,4408,
+2026-08-22T19:30:56+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0090\2024-08-18\3\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,4408,
+2026-08-22T19:30:57+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0090\2024-08-18\3\widefield.wfz.receipt.json,1508,DESKTOP-KH3D2OM,4408,
+2026-08-22T19:39:05+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0091\2025-06-19\2\widefield.wfz.partial-4408,0,DESKTOP-KH3D2OM,4408,temporary output
+2026-08-22T19:41:55+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-08\2\widefield.wfz.README.md,3075,DESKTOP-KH3D2OM,54216,
+2026-08-22T19:41:58+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-08\2\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,54216,
+2026-08-22T19:41:58+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-08-08\2\widefield.wfz.receipt.json,1507,DESKTOP-KH3D2OM,54216,
+2026-08-22T19:45:11+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2025-12-10\1\widefield.wfz.partial-21968,40106040938,DESKTOP-KH3D2OM,21968,renamed into place
+2026-08-22T19:45:11+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2025-12-10\1\widefield.wfz,40106040938,DESKTOP-KH3D2OM,21968,
+2026-08-22T19:50:24+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-24\1\widefield.wfz.README.md,3075,DESKTOP-KH3D2OM,52932,
+2026-08-22T19:50:25+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0091\2025-05-06\3\widefield.wfz.partial-54216,0,DESKTOP-KH3D2OM,54216,temporary output
+2026-08-22T19:50:27+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-24\1\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,52932,
+2026-08-22T19:50:28+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-24\1\widefield.wfz.receipt.json,1505,DESKTOP-KH3D2OM,52932,
+2026-08-22T19:59:34+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0023\2023-08-09\1\widefield.wfz.partial-52932,0,DESKTOP-KH3D2OM,52932,temporary output
+2026-08-22T20:08:01+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz.partial-56608,34966980318,DESKTOP-KH3D2OM,56608,renamed into place
+2026-08-22T20:08:01+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz,34966980318,DESKTOP-KH3D2OM,56608,
+2026-08-22T20:10:06+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0098\2025-12-16\1\widefield.wfz.partial-45944,36692669503,DESKTOP-KH3D2OM,45944,renamed into place
+2026-08-22T20:10:06+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0098\2025-12-16\1\widefield.wfz,36692669503,DESKTOP-KH3D2OM,45944,
+2026-08-22T20:39:54+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-19\1\widefield.wfz.README.md,2894,DESKTOP-KH3D2OM,16236,
+2026-08-22T20:39:57+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-19\1\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,16236,
+2026-08-22T20:39:57+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-04-19\1\widefield.wfz.receipt.json,1503,DESKTOP-KH3D2OM,16236,
+2026-08-22T20:49:46+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\FD_001\2025-10-08\4\widefield.wfz.partial-16236,0,DESKTOP-KH3D2OM,16236,temporary output
+2026-08-22T20:51:03+00:00,delete,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-03-04\1\widefield.wfz.partial-34736,40615146489,DESKTOP-KH3D2OM,34736,renamed into place
+2026-08-22T20:51:03+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0033\2025-03-04\1\widefield.wfz,40615146489,DESKTOP-KH3D2OM,34736,
+2026-08-22T20:56:56+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2025-12-10\1\widefield.wfz.README.md,2894,DESKTOP-KH3D2OM,21968,
+2026-08-22T20:57:00+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2025-12-10\1\widefield.wfz.frame.tif,627776,DESKTOP-KH3D2OM,21968,
+2026-08-22T20:57:00+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0041\2025-12-10\1\widefield.wfz.receipt.json,1504,DESKTOP-KH3D2OM,21968,
+2026-08-22T21:05:59+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\FD_011\2026-05-25\1\widefield.wfz.partial-21968,0,DESKTOP-KH3D2OM,21968,temporary output
+2026-08-22T21:17:13+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz.README.md,3075,DESKTOP-KH3D2OM,56608,
+2026-08-22T21:17:24+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz.frame.tif,631826,DESKTOP-KH3D2OM,56608,
+2026-08-22T21:17:28+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0092\2025-06-21\2\widefield.wfz.receipt.json,1505,DESKTOP-KH3D2OM,56608,
