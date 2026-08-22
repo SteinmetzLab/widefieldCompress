@@ -48,6 +48,59 @@ Measured 2026-08-14. Everything here is read-only observation: the Cloud Sync co
 from the TrueNAS database in SQLite read-only mode, the bucket via the read-only application key,
 and the link counters via `netstat`. **Nothing was changed.**
 
+> ## SOLVED 2026-08-22: our own temp files make every sync run fail, so rclone never deletes
+>
+> `/var/log/middlewared.log` is **world-readable** - no admin needed, and the earlier note that
+> there were "no cloud_sync entries" in it was wrong. It contains the previous run's exit:
+>
+> ```
+> [2026/08/20 23:20:46] (ERROR) middlewared.job.run() - Job ... CloudSyncService ... failed
+> middlewared.service_exception.CallError: [EFAULT]
+>   Checks:           5988402 / 5988402, 100%
+>   Transferred:          945 / 945, 100%
+>   Elapsed time:  73h20m44.4s
+>
+>   2026/08/20 23:20:45 Failed to sync with 3 errors: last error was:
+>     failed to open source object: open
+>     /mnt/data/data/Subjects/ZYE_0098/2025-07-18/1/widefield.wfz.partial-21968:
+>     no such file or directory
+> ```
+>
+> **That is our compressor's temporary file.** rclone began uploading a `.wfz.partial-<pid>`, our
+> driver renamed it into place mid-transfer, and rclone failed on it. The run did all its work -
+> checks 100%, transfers 100% - and then **exited with errors**. rclone deliberately skips
+> destination deletions when a run had errors rather than act on a possibly-incomplete source
+> listing. So the delete phase never ran.
+>
+> **This explains every observation at once**: no hide marker for any of the 44 deleted tars, the
+> four `.wfz.partial-*` still live in B2 after a completed run, and 21,650 sampled object versions
+> with zero hides anywhere. Nothing is wrong with SYNC mode, the bucket, the lifecycle rule, or B2.
+>
+> There are **12 `.partial-*` files on the share right now** - 4 live `widefield.wfz.partial-*` from
+> the running campaign, which churn continuously, and 8 stale `.cbin.partial-*` left by the crashed
+> 08-13 ephys run. So every run while the campaign is producing will hit this again.
+>
+> **Two ways out, and one needs nobody:**
+>
+> 1. **Wait for the compression campaign to finish** (~4 days as of 08-22). With no temp files
+>    churning, the next run ends clean and all pending deletions propagate at once. Free.
+> 2. **Add `*.partial-*` to the task's exclude list** - recommendation 3 below, still unapplied, and
+>    now known to be the thing blocking the whole deletion saving rather than a tidiness nicety.
+>
+> Also worth doing: the 8 stale ephys `.cbin.partial-*` are ~121 GB of inert debris that rclone is
+> dutifully backing up to B2. Deleting them locally removes that waste. They are temp files with no
+> referent; the ephys driver would clear them on its next run anyway.
+>
+> ### And the "stall" was probably not a stall
+>
+> The 73-hour run did **5,988,402 checks** to move 945 transfers. That is the CPU burn - rclone
+> comparing ~6 million objects with `--fast-list`, single-threaded. A run of this length is normal
+> for this configuration, not a hang, which supports Nick's read that B2 "eventually goes through".
+> **Correction to what follows:** I could not distinguish a slow trickle from a true stall, because
+> B2 upload traffic is unresolvable against the 118 MB/s of SMB the compression campaign generates.
+> The one measurement that would settle it is the B2 console's "Uploaded Parts Size" on the
+> Unfinished Large Files page, sampled twice a few minutes apart.
+>
 > ## 2026-08-22: the sync has stalled outright - zero completed uploads in 25 hours
 >
 > This is worse than slow and it needs the admin.
