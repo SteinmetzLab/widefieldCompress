@@ -48,6 +48,44 @@ Measured 2026-08-14. Everything here is read-only observation: the Cloud Sync co
 from the TrueNAS database in SQLite read-only mode, the bucket via the read-only application key,
 and the link counters via `netstat`. **Nothing was changed.**
 
+> ## 2026-08-22: the sync has stalled outright - zero completed uploads in 25 hours
+>
+> This is worse than slow and it needs the admin.
+>
+> ```
+> b2_20260821_1624.csv: 456 offsite
+> b2_20260822_1752.csv: 456 offsite      newly offsite: 0     dropped: 0
+> ```
+>
+> **Run 11957 has completed nothing at all.** It started 2026-08-21 06:20:49 UTC and is 35.5 h in at
+> ~90% of one core. The newest finished `.wfz` in the bucket *started* at 08-21 04:31 UTC - under the
+> previous run, which ended at 06:20. So every upload run 11957 has opened is still open:
+>
+> - **19 transfers started 08-21 06:32-09:05 UTC are still unfinished 33+ hours later**, plus one
+>   from 08-22 06:48. That is 20 of 20 slots occupied, so nothing new can start.
+> - The backlog has **doubled in a day**: 67 files / 2.98 TB on 08-21, **138 files / 5.97 TB** now,
+>   against ~2.9 TB/day of new `.wfz` being produced.
+>
+> Also note the transfers that were in flight when run 69940 ended simply vanished from the
+> unfinished list without ever completing - the offsite count did not move - which is the discarded
+> in-flight work described in §3 below, costing real upload bandwidth each time a run cycles.
+>
+> **A possibility worth naming, and it may be self-inflicted:** we deleted 44 tars on 08-18 through
+> 08-21, most of them *during* run 11957. rclone refuses to apply destination deletions when a run
+> had IO errors, and source files vanishing mid-run is exactly the kind of error that triggers that.
+> So the deletions may be preventing the very propagation we are waiting on. It is not the whole
+> story - the four `.wfz.partial-*` deleted *before* run 69940 started also never propagated, and
+> that run did end - but if this contributes, the fix is to do deletions between runs rather than
+> during one. **Confidence: plausible, unverified.** The task log settles it.
+>
+> **Recommended, in order:** have the admin (1) read the Cloud Sync task log for run 11957, (2) stop
+> and restart the task so the stuck transfers are not held indefinitely, (3) drop `--fast-list` from
+> the task `args`, and (4) split the single `Subjects` task into 3-4 prefix tasks. Items 3 and 4 are
+> the standing recommendations below; items 1 and 2 are new and urgent.
+>
+> Nothing here threatens data. Every archive still has both its `.wfz` and, except for the 44
+> deleted, its original tar, on a checksummed redundant pool. What is degrading is the offsite copy.
+>
 > ## 2026-08-20: the bottleneck looks like rclone's own single-core CPU
 >
 > Caught the sync in the act. `pgrep -lf rclone` on sahale:
