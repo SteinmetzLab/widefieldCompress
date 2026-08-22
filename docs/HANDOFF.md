@@ -3,6 +3,37 @@
 Written 2026-08-13, updated 2026-08-17. Read this first, then `README.md`. Every other doc
 referenced here is in `docs/`.
 
+> ## The operative plan, agreed 2026-08-22
+>
+> 1. **Let the widefield campaign finish** — ~4 days from 08-22, so around Wednesday 08-26.
+> 2. **Then delete the remaining tars in one pass**, cheap tier per archive
+>    (`delete_tar.py sweep` to screen, then `delete --allow-cheap`).
+> 3. **Wait for a clean sync run to propagate those deletions** and confirm a hide marker with
+>    `delete_tar.py offsite <session>`.
+> 4. **Only then start the ephys campaign.**
+>
+> Step 4 is the point Nick raised and it is correct. `scripts/ephys_compress.py` writes
+> `*.cbin.partial-<pid>` and `*.ch.partial-<pid>` **inside `/mnt/data/data/Subjects`**, the synced
+> tree, and renames them on success. That is the same churn that makes every rclone run exit with
+> errors and therefore skip its delete phase. Starting ephys before the deletions have propagated
+> would re-block them indefinitely.
+>
+> **Timing wrinkle:** runs chain nearly back-to-back — run 69940 failed at 23:20:46 and the next
+> started at 23:20:49, three seconds later — and each takes ~73 h to check ~6 M objects. So there is
+> no quiet window in which to delete. Deleting during a run guarantees *that* run also errors, but
+> nothing is lost: the following run, with no temp-file churn, propagates everything at once. Expect
+> the hide markers roughly **3-4 days after the deletions**, then B2 billing clears 30 days later.
+>
+> **The 31-day ZFS snapshot margin is what makes one big pass safe.** It is far longer than the 3-4
+> days needed to confirm propagation, so if anything were wrong every tar is still recoverable
+> locally for about four more weeks.
+>
+> **Still worth the Monday email:** adding `*.partial-*` to the Subjects task exclude list decouples
+> all of this. Runs would stop erroring immediately, deletions would propagate at the end of
+> whichever run is in progress, and **ephys could then run without blocking anything**. It saves
+> roughly a week of waiting and roughly $470/month of tars sitting in B2 that we have already
+> deleted locally.
+>
 > ## What changed since it was written (2026-08-17)
 >
 > - **Widefield: 326 of 1,120 archives**, 58.18 TB -> 24.20 TB, x2.40, **326/326 byte-identical**.
