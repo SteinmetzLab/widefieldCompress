@@ -70,10 +70,16 @@ def main() -> int:
         err_path = out_path.with_suffix(".err")
         note(log, f"launch #{attempt} -> {out_path.name}")
         t0 = time.time()
+        # Below-normal priority. `--jobs 8 --threads 4` is 32 threads on 16 logical cores, and
+        # measured 13.3 of those cores in use on 2026-08-24, which makes the workstation
+        # unpleasant to use for anything else. Below-normal costs nothing while the machine is
+        # otherwise idle - the campaign still takes every spare cycle - but interactive work now
+        # preempts it. Child worker processes inherit this.
+        creationflags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
         with out_path.open("w", encoding="utf-8") as fo, \
                 err_path.open("w", encoding="utf-8") as fe:
             rc = subprocess.call([args.python, *DEFAULT_ARGS], cwd=str(HERE),
-                                 stdout=fo, stderr=fe)
+                                 stdout=fo, stderr=fe, creationflags=creationflags)
         dt = time.time() - t0
 
         text = out_path.read_text(encoding="utf-8", errors="replace")
