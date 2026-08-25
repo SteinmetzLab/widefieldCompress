@@ -48,6 +48,27 @@ Measured 2026-08-14. Everything here is read-only observation: the Cloud Sync co
 from the TrueNAS database in SQLite read-only mode, the bucket via the read-only application key,
 and the link counters via `netstat`. **Nothing was changed.**
 
+> ## 2026-08-24: the temp-file collision cuts both ways, and is now costing compression work
+>
+> The `*.partial-*` exclude was framed below as a backup-side fix. It is also a **compression-side**
+> fix. Three archives failed in run 003 like this:
+>
+> ```
+> [107/441] AB_0003/2021-03-29/2  FAILED: PermissionError: [Errno 13] The process cannot access
+>   the file because it is being used by another process:
+>   '\\sahale...\AB_0003\2021-03-29\2\widefield.wfz.partial-50336'
+> ```
+>
+> **rclone had our temporary file open for upload, so our own atomic rename failed** and the archive
+> was lost for that pass. Three of the first 120 items in run 003, about 2.5%, which over the
+> remaining work is on the order of another eight archives to redo.
+>
+> So the same missing exclude now (a) makes every sync run exit with errors and skip its delete
+> phase, (b) wastes upload bandwidth on files that are about to be renamed away, and (c) **destroys
+> compression work outright**. Nothing is permanently lost - the failed archives are simply absent
+> from `bulk.jsonl` and get retried on the next supervisor relaunch - but it is repeated waste on
+> both sides of the same collision.
+>
 > ## SOLVED 2026-08-22: our own temp files make every sync run fail, so rclone never deletes
 >
 > `/var/log/middlewared.log` is **world-readable** - no admin needed, and the earlier note that
