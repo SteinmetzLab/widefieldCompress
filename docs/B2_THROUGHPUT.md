@@ -48,6 +48,39 @@ Measured 2026-08-14. Everything here is read-only observation: the Cloud Sync co
 from the TrueNAS database in SQLite read-only mode, the bucket via the read-only application key,
 and the link counters via `netstat`. **Nothing was changed.**
 
+> ## 2026-08-26: the sync run is genuinely hung and needs a restart nobody here can do
+>
+> I called this wrong twice before, so here is the evidence side by side. On 08-22 I said "stalled"
+> and was wrong - it was working, just lumpy. This is a different state:
+>
+> | | 08-22 (working, lumpy) | 08-26 (hung) |
+> |---|---|---|
+> | rclone CPU | 87-89% of a core | **0.22 s in 90 s (0.24%)** |
+> | TCP sessions to B2 | 22 established | **0** (the two on :443 are the TrueNAS UI listening) |
+> | unfinished large files | 19-20 | **0** |
+> | send queues to B2 | 24 non-empty | none |
+>
+> PID 11957 has been running **132.6 h** - 81% longer than the previous run's 73.3 h - and is
+> sleeping in `uwait` with 3.96 GB resident, doing nothing at all. It has torn down every connection
+> to Backblaze and is neither transferring nor exiting.
+>
+> **Consequences, and they compound:**
+>
+> - No uploads. The backlog is **412 files / 9.91 TB** and will reach roughly 13 TB as compression
+>   finishes today.
+> - No deletions propagate, so still no hide marker for any of the 44 deleted tars.
+> - TrueNAS will not start a new run while this one is nominally alive, so it will not self-heal.
+> - **It now caps the deletion campaign.** Only the 620 archives whose `.wfz` is confirmed offsite
+>   are deletable, because C7 refuses the rest. The other ~412 cannot be touched until their `.wfz`
+>   uploads, which requires the sync to work.
+>
+> **Nobody with shell access here can fix it.** `kill -0 11957` returns "Operation not permitted",
+> `sudo` prompts for a password, and `midclt` refuses to connect as a non-root user. It needs the
+> Cloud Sync task stopped and restarted from the TrueNAS UI, or a root shell.
+>
+> While the task is being touched anyway, the two config changes below are worth making in the same
+> visit: `*.partial-*` in the exclude list, and `--transfers 4` rather than 20.
+>
 > ## 2026-08-24: the temp-file collision cuts both ways, and is now costing compression work
 >
 > The `*.partial-*` exclude was framed below as a backup-side fix. It is also a **compression-side**
