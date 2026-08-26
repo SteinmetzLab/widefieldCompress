@@ -48,7 +48,47 @@ Measured 2026-08-14. Everything here is read-only observation: the Cloud Sync co
 from the TrueNAS database in SQLite read-only mode, the bucket via the read-only application key,
 and the link counters via `netstat`. **Nothing was changed.**
 
-> ## 2026-08-26: the sync run is genuinely hung and needs a restart nobody here can do
+> ## RETRACTED, same day: it was not hung. It was in a lull, and it is fast.
+>
+> Nick checked the B2 console and found fresh unfinished large files created 20:41 UTC with 30-36 GB
+> of parts each. Re-checked: **PID 11957 is the same process, back at 111.7% CPU with 18 new
+> transfers started 20:41 onward.** It went quiet, then resumed. The section below is wrong.
+>
+> **And the throughput is far better than anything in this document.** Measured over the same
+> 100-second window from both ends:
+>
+> ```
+> sahale total outbound          190 MB/s
+> workstation received (SMB)      85 MB/s
+> => B2 ingest                  ~105 MB/s
+> ```
+>
+> That is four times the 26 MB/s run average and close to the 128 MB/s the WAN demonstrated on
+> 08-10. **So the "~26 MB/s" figure is a whole-run average dragged down by the quiet periods, not a
+> rate limit**, and the Sunday conclusion that "the path is the limit at 20-45 MB/s" is withdrawn -
+> that was measured downloading to the *workstation*, which is a different and much slower path than
+> sahale to B2. **The recommendation to lower `--transfers` to 4 rested on that bad comparison and
+> should not be acted on.**
+>
+> **Three misreads in a row, all the same mistake:** treating a point sample as a steady state, and
+> measuring from the workstation instead of from sahale. The behavior is cyclic on a scale of many
+> hours - a burst of ~20 concurrent transfers at ~105 MB/s, then a quiet stretch - so any single
+> sample can show 0% CPU and no connections while nothing is wrong. **Do not diagnose this sync from
+> one observation.** Sample over hours, or read `/var/log/middlewared.log` for what actually
+> happened.
+>
+> **What survives:** the `.partial-*` error causing skipped deletions is documented in the log and
+> is not a guess. That remains the one confirmed defect and the one config change worth asking for.
+>
+> ### Cross-check on bucket size, 2026-08-26
+>
+> The B2 console reports **2,008,694 files, 310,778.6 GB**. The pool reports `logicalused 303T`
+> (291 T on disk, lz4 at 1.04x). B2 being ~8 TB larger than the live tree is what you would expect
+> when **7.14 TB of locally-deleted tars are still up there un-propagated**, plus retained prior
+> versions and the ~121 GB of stale ephys partials. The numbers are consistent with a
+> near-complete backup, and they independently confirm the deletions have not propagated.
+>
+> ## WRONG - 2026-08-26: the sync run is genuinely hung and needs a restart nobody here can do
 >
 > I called this wrong twice before, so here is the evidence side by side. On 08-22 I said "stalled"
 > and was wrong - it was working, just lumpy. This is a different state:
