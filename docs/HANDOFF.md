@@ -3,6 +3,38 @@
 Written 2026-08-13, updated 2026-08-17. Read this first, then `README.md`. Every other doc
 referenced here is in `docs/`.
 
+> ## The widefield campaign is COMPLETE, 2026-08-27
+>
+> ```
+> archives compressed   1,112 of 1,120
+> byte-identical        1,112 / 1,112        no verification failure, ever
+> source                118.68 TB
+> compressed             48.16 TB
+> ratio                  x2.464
+> reclaimable            70.52 TB  =  $490/month  =  $5,881/year at $6.95/TB/month
+> ratio range            x2.07 (AB_0003/2021-04-19/1) to x3.80 (Subjects/test/2025-11-04)
+> bit-shift              4 on 1,012 archives, 0 on 100
+> ```
+>
+> **Seven archives never compressed and never will without a decision:**
+>
+> | reason | sessions |
+> |---|---|
+> | `ValueError: buffer is smaller than requested size` | `AB_0032/2024-04-05/1`, `AL_0033/2025-01-09/2` |
+> | `UnsupportedArchive`, a small stray member tar'd in beside the frames | `AL_0045/2026-02-09/1` (8,873 B), `AL_0045/2026-02-05/1` (24 B), `AL_0046/2026-03-02/1` (22 B), `ZYE_0098/2026-01-02/1` (57 B), `AL_0039/2025-10-01/1` (1,779 B) |
+>
+> Note the stray members are **tiny** - 22 to 8,873 bytes - so these are not the 82 GB
+> SpikeGLX-in-the-tar case that `MIXED_ARCHIVES.md` describes. They are the A1 finding from
+> `PIPELINE_REVIEW.md`: the tar sweeps the whole session directory and catches a stray small file.
+> `codec.compress(drop_members=...)` could take them once someone verifies each stray member exists
+> outside the tar. The two `ValueError` cases are unexplained and worth a look.
+>
+> **The supervisor was stopped on 2026-08-27** with `D:\temp\wfc_stop` after it had relaunched **22
+> times**, each time retrying those same 7 and failing. That loop was not just wasted work: every
+> launch created `.wfz.partial-*` files, which is precisely what makes each rclone run exit with
+> errors and skip its delete phase. **Stopping it is what should finally let the deletions
+> propagate.** Delete the stop file before any future restart.
+>
 > ## The operative plan, agreed 2026-08-22
 >
 > 1. **Let the widefield campaign finish** — ~4 days from 08-22, so around Wednesday 08-26.
