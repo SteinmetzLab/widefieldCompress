@@ -6,15 +6,27 @@ referenced here is in `docs/`.
 > ## The widefield campaign is COMPLETE, 2026-08-27
 >
 > ```
-> archives compressed   1,112 of 1,120
-> byte-identical        1,112 / 1,112        no verification failure, ever
-> source                118.68 TB
-> compressed             48.16 TB
-> ratio                  x2.464
-> reclaimable            70.52 TB  =  $490/month  =  $5,881/year at $6.95/TB/month
+>                       archives      source   compressed    ratio
+> faithful                 1,112   118.68 TB     48.16 TB   x2.464
+> partial (see below)          5     0.55 TB      0.20 TB   x2.754
+> TOTAL                    1,117   119.23 TB     48.36 TB   x2.465
+>
+> verified rebuild      1,117 / 1,117            no verification failure, ever
+> reclaimable              70.86 TB  =  $493/month  =  $5,910/year at $6.95/TB/month
+>   deletable by the gate  70.52 TB
+>   needs a decision        0.35 TB   (the 5 partials)
 > ratio range            x2.07 (AB_0003/2021-04-19/1) to x3.80 (Subjects/test/2025-11-04)
-> bit-shift              4 on 1,012 archives, 0 on 100
+> bit-shift              4 on 1,017 archives, 0 on 100
 > ```
+>
+> **The 5 partials were compressed 2026-08-27** after their stray `p0.missed_samples.imec0.txt` was
+> proven to exist outside each archive - three already did, two had to be lifted out of the tar
+> first with `scripts/extract_stray_member.py`. Ratios x2.61 to x2.99, all five rebuilding their
+> frames correctly. **The deletion gate refuses them and should**: checked on
+> `ZYE_0098/2026-01-02/1`, condition C3 fails with `sha=False` because `source_tar_sha256` is null
+> by design for a partial. Deleting one of those five tars is a separate, recorded decision.
+>
+> Only **2 archives remain uncompressed**, and both are truncated source data - see below.
 >
 > ### Re-census 2026-08-27: nothing new, and nothing was missed
 >
