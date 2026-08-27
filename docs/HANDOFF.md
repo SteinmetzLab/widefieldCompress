@@ -16,6 +16,31 @@ referenced here is in `docs/`.
 > bit-shift              4 on 1,012 archives, 0 on 100
 > ```
 >
+> ### Re-census 2026-08-27: nothing new, and nothing was missed
+>
+> Fresh walk of every `*.tar` under `Subjects` (2,556 files):
+>
+> ```
+>  1080   112.30 TB   widefield.tar / <expNum>.tar
+>  1474     0.28 TB   _kilosort_raw.output.tar     (190 MB each, not an opportunity)
+>     1     0.00 TB   old_widefield.tar            AL_0032/2024-06-12/1, 4.24 GB
+>     1     0.00 TB   ._widefield.tar              macOS resource fork, 0 bytes
+> ```
+>
+> - **Zero new widefield tars since the Aug-3 census.** Nothing has been added to compress.
+> - **All 44 tars we deleted are confirmed absent** from the server.
+> - Six census entries never reached the run log, and **all six are zero-byte files** -
+>   `AB_0032/2024-06-12/1`, `AB_0032/2024-08-12/5`, `AL_0034/2024-08-12/5`,
+>   `AL_0035/2024-11-24/1`, `ZYE_0089/2024-07-10/5`, plus the `._widefield.tar`. Nothing real was
+>   skipped.
+>
+> ### The 21 "mixed archives" are not refusals - they all compressed
+>
+> Worth correcting, because the earlier docs leave the impression they are outstanding. All 21 were
+> trimmed by the lab from **3.36 TB to 2.13 TB**, which removed the 82 GB ephys members and made the
+> archives uniform. The campaign then **compressed all 21 successfully.** See
+> `MIXED_ARCHIVES.md`, whose framing predates the trim.
+>
 > **Seven archives never compressed and never will without a decision:**
 >
 > | reason | sessions |
@@ -23,11 +48,34 @@ referenced here is in `docs/`.
 > | `ValueError: buffer is smaller than requested size` | `AB_0032/2024-04-05/1`, `AL_0033/2025-01-09/2` |
 > | `UnsupportedArchive`, a small stray member tar'd in beside the frames | `AL_0045/2026-02-09/1` (8,873 B), `AL_0045/2026-02-05/1` (24 B), `AL_0046/2026-03-02/1` (22 B), `ZYE_0098/2026-01-02/1` (57 B), `AL_0039/2025-10-01/1` (1,779 B) |
 >
-> Note the stray members are **tiny** - 22 to 8,873 bytes - so these are not the 82 GB
-> SpikeGLX-in-the-tar case that `MIXED_ARCHIVES.md` describes. They are the A1 finding from
-> `PIPELINE_REVIEW.md`: the tar sweeps the whole session directory and catches a stray small file.
-> `codec.compress(drop_members=...)` could take them once someone verifies each stray member exists
-> outside the tar. The two `ValueError` cases are unexplained and worth a look.
+> **Identified 2026-08-27.** All five `UnsupportedArchive` cases have the *same* stray, and it is
+> the **last** member of the tar, not the first: `1/p0.missed_samples.imec0.txt`, a SpikeGLX
+> dropped-sample log. Every one of the five tars ends cleanly with two zero blocks, so they are not
+> truncated - they simply contain one extra small text file. This is the A1 finding from
+> `PIPELINE_REVIEW.md`: the tar sweeps the whole session directory.
+>
+> Whether the stray can be dropped splits the five in two:
+>
+> | session | stray | same file outside the tar? | tar |
+> |---|---|---|---|
+> | `AL_0045/2026-02-09/1` | 8,873 B | **yes**, `p0_g0_t0.imec0/`, size matches | 60.36 GB |
+> | `AL_0045/2026-02-05/1` | 24 B | **yes**, size matches | 91.95 GB |
+> | `AL_0046/2026-03-02/1` | 22 B | **yes**, size matches | 92.71 GB |
+> | `ZYE_0098/2026-01-02/1` | 57 B | **no - the tar holds the only copy** | 96.34 GB |
+> | `AL_0039/2025-10-01/1` | 1,779 B | **no - the tar holds the only copy** | 206.14 GB |
+>
+> So the first three are ready for `codec.compress(drop_members=...)` as soon as someone confirms
+> the SHA-256 matches (the codec refuses to drop without per-member hash evidence, by design).
+> For the last two, extract the text file to the session directory first, then drop and compress -
+> that preserves the log rather than discarding it.
+>
+> Total opportunity: **547.5 GB of tar, roughly 325 GB reclaimable** at the campaign's x2.46. Small
+> against 70.5 TB, but it closes the corpus out properly.
+>
+> The two `ValueError: buffer is smaller than requested size` cases are still unexplained.
+> `AB_0032/2024-04-05/1` (12.75 GB) holds Basler TIFFs; `AL_0033/2025-01-09/2` (23.45 GB) holds raw
+> `frame-N` members at 627,200 bytes. Both open normally, so the fault is somewhere later in the
+> stream - possibly a genuinely short final member. Worth a look, 36 GB between them.
 >
 > **The supervisor was stopped on 2026-08-27** with `D:\temp\wfc_stop` after it had relaunched **22
 > times**, each time retrying those same 7 and failing. That loop was not just wasted work: every
