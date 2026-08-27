@@ -72,10 +72,38 @@ referenced here is in `docs/`.
 > Total opportunity: **547.5 GB of tar, roughly 325 GB reclaimable** at the campaign's x2.46. Small
 > against 70.5 TB, but it closes the corpus out properly.
 >
-> The two `ValueError: buffer is smaller than requested size` cases are still unexplained.
-> `AB_0032/2024-04-05/1` (12.75 GB) holds Basler TIFFs; `AL_0033/2025-01-09/2` (23.45 GB) holds raw
-> `frame-N` members at 627,200 bytes. Both open normally, so the fault is somewhere later in the
-> stream - possibly a genuinely short final member. Worth a look, 36 GB between them.
+> ### The two `ValueError` cases are truncated tars, and that is pre-existing data damage
+>
+> Solved 2026-08-27. **Both archives are truncated: the final member's payload runs past the end of
+> the file, and neither has the two zero blocks that mark end-of-archive.**
+>
+> | session | tar | last member | short by |
+> |---|---|---|---|
+> | `AB_0032/2024-04-05/1` | 12,751,827,968 B | frame 117252 of 631,826 B | **370,176 B (58% of the frame)** |
+> | `AL_0033/2025-01-09/2` | 23,449,961,984 B | `frame-133618` of 627,200 B | **102,912 B (16%)** |
+>
+> Both file sizes are exact multiples of 512, so the write stopped on a block boundary - a killed
+> process, a full disk or a dropped connection, not corruption. `ValueError: buffer is smaller than
+> requested size` is the compressor correctly refusing to encode a frame whose bytes are not all
+> there. **The tool is right; the data is incomplete.**
+>
+> Neither session has the frames anywhere else. `AB_0032/2024-04-05/1` holds 44 files and 17 GB with
+> no subdirectories and no SVD outputs, so the loose frames were removed after tarring.
+> **`AL_0033/2025-01-09/2` contains exactly one file - the truncated tar - and 22 GB, with no session
+> metadata at all**, which looks like an aborted session. So the tars hold the only copy of their
+> frames, minus the incomplete last one.
+>
+> **Left alone deliberately.** They could be compressed as partials that drop the incomplete final
+> frame, which is unrecoverable in any case, but `codec.compress(drop_members=)` requires a verified
+> copy outside the archive and there cannot be one. **Do not fabricate that evidence** - it exists to
+> stop exactly this kind of shortcut. A principled option, if the 36 GB is ever worth it, is an
+> explicit `allow_truncated_tail` path that drops only a final member whose payload is
+> demonstrably short by file-size arithmetic and records it distinctly in the receipt. That is a
+> change to a safety mechanism for ~14.7 GB of savings, so it needs asking first.
+>
+> Worth flagging on its own terms: **two archives on the share have been silently truncated since
+> they were written**, one of them an orphan. That is a data-integrity finding independent of
+> compression.
 >
 > **The supervisor was stopped on 2026-08-27** with `D:\temp\wfc_stop` after it had relaunched **22
 > times**, each time retrying those same 7 and failing. That loop was not just wasted work: every

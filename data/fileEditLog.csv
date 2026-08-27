@@ -6892,3 +6892,6 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-27T01:00:18+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AB_0003\2021-03-29\2\widefield.wfz.README.md,3074,DESKTOP-KH3D2OM,18388,
 2026-08-27T01:00:19+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AB_0003\2021-03-29\2\widefield.wfz.frame.tif,528530,DESKTOP-KH3D2OM,18388,
 2026-08-27T01:00:19+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AB_0003\2021-03-29\2\widefield.wfz.receipt.json,1504,DESKTOP-KH3D2OM,18388,
+2026-08-27T18:33:24+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\ZYE_0098\2026-01-02\1\p0_g0_t0.imec0\p0.missed_samples.imec0.txt,57,DESKTOP-KH3D2OM,57296,lifted from widefield.tar member 1/p0.missed_samples.imec0.txt; sha256 475f7840cb2bc97f
+2026-08-27T18:38:40+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-10-01\1\p0_g0_t0.imec0\p0.missed_samples.imec0.txt,1779,DESKTOP-KH3D2OM,59932,lifted from widefield.tar member 1/p0.missed_samples.imec0.txt; sha256 ab2581c2ff17a203
+2026-08-27T18:41:13+00:00,create,\\sahale.biostr.washington.edu\data\Subjects\AL_0039\2025-10-01\1\widefield.wfz.partial-51324,0,DESKTOP-KH3D2OM,51324,temporary output

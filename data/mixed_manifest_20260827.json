@@ -1,0 +1,102 @@
+{
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0039\\2025-10-01\\1\\widefield.tar": {
+  "all_verified": true,
+  "discard_bytes": 1779,
+  "discardable": [
+   {
+    "member": "1/p0.missed_samples.imec0.txt",
+    "member_bytes": 1779,
+    "method": "sha256",
+    "note": "",
+    "outside_bytes": 1779,
+    "outside_path": "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0039\\2025-10-01\\1\\p0_g0_t0.imec0\\p0.missed_samples.imec0.txt",
+    "sha256": "ab2581c2ff17a203f901efb5baacb7776e096d761fc920258cbb01ad132b5d91",
+    "verified": true
+   }
+  ],
+  "error": "",
+  "frame_bytes": 631826,
+  "n_frames": 325737,
+  "tar_bytes": 206136801280
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0045\\2026-02-05\\1\\widefield.tar": {
+  "all_verified": true,
+  "discard_bytes": 24,
+  "discardable": [
+   {
+    "member": "1/p0.missed_samples.imec0.txt",
+    "member_bytes": 24,
+    "method": "sha256",
+    "note": "",
+    "outside_bytes": 24,
+    "outside_path": "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0045\\2026-02-05\\1\\p0_g0_t0.imec0\\p0.missed_samples.imec0.txt",
+    "sha256": "d81a943b7c13529751ab8059eff5dfd09de8ce5035167b306fb63a40ecb61484",
+    "verified": true
+   }
+  ],
+  "error": "",
+  "frame_bytes": 631826,
+  "n_frames": 145302,
+  "tar_bytes": 91951757824
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0045\\2026-02-09\\1\\widefield.tar": {
+  "all_verified": true,
+  "discard_bytes": 8873,
+  "discardable": [
+   {
+    "member": "1/p0.missed_samples.imec0.txt",
+    "member_bytes": 8873,
+    "method": "sha256",
+    "note": "",
+    "outside_bytes": 8873,
+    "outside_path": "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0045\\2026-02-09\\1\\p0_g0_t0.imec0\\p0.missed_samples.imec0.txt",
+    "sha256": "bf51ae1ef639bc67600b00528a9c6759aa3632d882483daa6d46b85ad00286d4",
+    "verified": true
+   }
+  ],
+  "error": "",
+  "frame_bytes": 631826,
+  "n_frames": 95374,
+  "tar_bytes": 60355730432
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0046\\2026-03-02\\1\\widefield.tar": {
+  "all_verified": true,
+  "discard_bytes": 22,
+  "discardable": [
+   {
+    "member": "1/p0.missed_samples.imec0.txt",
+    "member_bytes": 22,
+    "method": "sha256",
+    "note": "",
+    "outside_bytes": 22,
+    "outside_path": "\\\\sahale.biostr.washington.edu\\data\\Subjects\\AL_0046\\2026-03-02\\1\\p0_g0_t0.imec0\\p0.missed_samples.imec0.txt",
+    "sha256": "6b97e62f3df0cb167d6cb85f14ff0c29f3f0b87691233758aea18bcaa8becf92",
+    "verified": true
+   }
+  ],
+  "error": "",
+  "frame_bytes": 631826,
+  "n_frames": 146497,
+  "tar_bytes": 92707992064
+ },
+ "\\\\sahale.biostr.washington.edu\\data\\Subjects\\ZYE_0098\\2026-01-02\\1\\widefield.tar": {
+  "all_verified": true,
+  "discard_bytes": 57,
+  "discardable": [
+   {
+    "member": "1/p0.missed_samples.imec0.txt",
+    "member_bytes": 57,
+    "method": "sha256",
+    "note": "",
+    "outside_bytes": 57,
+    "outside_path": "\\\\sahale.biostr.washington.edu\\data\\Subjects\\ZYE_0098\\2026-01-02\\1\\p0_g0_t0.imec0\\p0.missed_samples.imec0.txt",
+    "sha256": "475f7840cb2bc97f7701fffeff453cca6547ced09f465f54ecbb6985ee655f2b",
+    "verified": true
+   }
+  ],
+  "error": "",
+  "frame_bytes": 631826,
+  "n_frames": 152238,
+  "tar_bytes": 96341080576
+ }
+}
