@@ -3,6 +3,39 @@
 Written 2026-08-13, updated 2026-08-17. Read this first, then `README.md`. Every other doc
 referenced here is in `docs/`.
 
+> ## The deletion campaign is COMPLETE too, 2026-08-28
+>
+> ```
+> tars deleted        1,112        all verified gone
+> bytes freed         118.68 TB
+> replaced by          48.36 TB of .wfz across 1,117 archives
+> authorised by       4 full-gate checks, 1,108 cheap-tier
+> ```
+>
+> **Only five tars remain**, and they are exactly the five partials - `AL_0039/2025-10-01/1`,
+> `AL_0045/2026-02-05/1`, `AL_0045/2026-02-09/1`, `AL_0046/2026-03-02/1`, `ZYE_0098/2026-01-02/1` -
+> refused at condition C3 because `source_tar_sha256` is null by design. Deleting those is a
+> separate decision. Plus the 2 truncated archives, which were never compressed, and 6 zero-byte
+> files: 13 `widefield.tar` left on the share in total.
+>
+> The batch took 61.7 minutes for 1,068 archives. **One transient failure**,
+> `AL_0035/2025-01-25/1`: the cheap conditions are re-run immediately before removal and C7 briefly
+> could not reach B2, so `delete` refused with "something changed since the check" and left the tar
+> alone. Re-checked minutes later, everything passed and it was deleted. **That is the guard working
+> exactly as intended** - it declined to act on evidence it could not re-confirm.
+>
+> ### The space has not come back yet, and that is expected
+>
+> ```
+> usedbydataset    280T -> 182T      the tars are out of the live tree
+> usedbysnapshots  4.76T -> 109T     ...and now held by the 31-day ZFS snapshots
+> used             291T (unchanged)
+> ```
+>
+> Pool space returns as those snapshots age out, around **2026-09-28**, except for whatever predates
+> the two never-expiring Feb-2024 snapshots. B2 storage clears 30 days after each hide marker
+> appears. Do not read the unchanged `used` figure as a failure.
+>
 > ## The widefield campaign is COMPLETE, 2026-08-27
 >
 > ```
