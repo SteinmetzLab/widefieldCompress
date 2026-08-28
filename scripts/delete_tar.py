@@ -614,13 +614,13 @@ def cmd_offsite(args) -> int:
     target = max(uploads, key=lambda v: v.upload_timestamp)
     print(f"\nrestoring the retained version {target.id_} ({target.size/1e9:.2f} GB) ...",
           flush=True)
-    P["work"].mkdir(parents=True, exist_ok=True)
-    dest = P["work"] / "restored_widefield.tar"
+    # Stream it. An earlier version downloaded the whole tar just to hash it, which for a 430 GB
+    # archive means 430 GB of local disk for no reason - and when the process was killed part way
+    # through it orphaned a 200 GB file that took the workstation to 97% full and broke git.
+    # Hashing the stream proves exactly the same thing and needs no disk at all.
     try:
-        dt = b2_download(args.bucket, f"b2id://{target.id_}", dest)
-        mb = dest.stat().st_size / 1e6
-        print(f"  {mb/1000:.2f} GB in {dt:.0f} s ({mb/max(dt,1e-9):.0f} MB/s)")
-        got, n, _ = sha256_file(dest, "the restored tar")
+        got, n, dt = b2_stream_sha256(f"b2id://{target.id_}")
+        print(f"  {n/1e9:.2f} GB in {dt:.0f} s ({n/1e6/max(dt,1e-9):.0f} MB/s)")
         restores = got == expect and n == target.size
         gone = not P["tar"].exists()
         print(f"\n  {got}\n  {'MATCHES' if got == expect else 'DOES NOT MATCH'} "
