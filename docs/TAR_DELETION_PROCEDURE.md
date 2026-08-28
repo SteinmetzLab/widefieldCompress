@@ -89,6 +89,39 @@ it is a live experimental session. For the first exercise of a brand-new delete 
 whose subject is called `test` is the right blast radius. Once the mechanism is demonstrated
 end to end, move to real sessions.
 
+## PROVEN END TO END, 2026-08-28: the undo path is demonstrated, not assumed
+
+The question this project opened with - can a deleted tar actually be recovered from Backblaze -
+is now answered by observation rather than argument.
+
+```
+  PASS  P1  the tar is gone from the server
+  PASS  P2  B2 shows a hide marker plus a retained prior version
+  PASS  P3  the retained version restores to source_tar_sha256
+  The undo path is demonstrated, not assumed.
+```
+
+`test/2026-02-17/1`, deleted 2026-08-18. Its B2 object now carries **two versions**: a `hide`
+marker stamped 2026-08-28 14:37:42 UTC, and the original `upload` from 2026-02-22 retained beneath
+it. Downloading that retained version gives 1.19 GB at 137 MB/s, hashing to `c14f7eedb58a...` -
+exactly the `source_tar_sha256` recorded when the archive was compressed. Confirmed the same way on
+`ZYE_0008/2020-07-25/1`.
+
+**The cause of the ten-day delay is confirmed by the fix working.** The prediction was that
+deletions would propagate as soon as the compression campaign stopped creating `.wfz.partial-*`
+files mid-run. The campaign was stopped 08-27 05:27 UTC; a sync run started 08-28 07:37 UTC over a
+stable tree, reached its delete phase about seven hours in, applied every pending deletion at
+14:37, and exited. **No config change, no admin, no intervention.** The `*.partial-*` exclude is
+still worth having, but only to stop this recurring next time a campaign runs.
+
+### What this settles
+
+- **SYNC mode works** - deletions do reach B2.
+- **The 30-day window is real** - the retained version is there and restorable.
+- **Gate condition 7 means what it says**: an archive whose `.wfz` is offsite can have its tar
+  deleted and recovered.
+- All **44 tars deleted so far** now carry hide markers; their B2 storage clears about 2026-09-27.
+
 ## Corrected 2026-08-21: the claim "this sync never deletes" was overstated
 
 I wrote below that destination deletions appear never to happen. **Two checks prompted by Nick
