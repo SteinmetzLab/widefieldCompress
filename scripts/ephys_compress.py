@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import os
@@ -316,6 +317,10 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--max-tb", type=float, help="stop after this much source has been done")
     ap.add_argument("--smallest-first", action="store_true")
+    ap.add_argument("--shard", default="",
+                    help="i/n - take only files whose stable hash of the path relative to --root "
+                         "falls in shard i of n. Lets several machines share the corpus with no "
+                         "coordination beyond agreeing on n.")
     ap.add_argument("--below-normal", action="store_true",
                     help="run at below-normal priority so the machine stays usable; workers "
                          "inherit it from the parent. Windows only, a no-op elsewhere.")
@@ -350,6 +355,32 @@ def main():
 
     done = already_done(recs, args.log)
     todo = [r for r in todo if r["bin"] not in done]
+
+    # Sharding, so several machines can work the same corpus without colliding. The partition is a
+    # stable hash of the path *relative to --root*, never the absolute path: this workstation sees
+    # Y:/Subjects/... and sahale sees /mnt/data/data/Subjects/..., so hashing the absolute form
+    # would put the same file in different shards on different machines and they would duplicate
+    # each other's work. md5 rather than hash(), which Python randomises per process.
+    if args.shard:
+        try:
+            i_s, n_s = args.shard.split("/")
+            i_s, n_s = int(i_s), int(n_s)
+        except ValueError:
+            print("--shard must look like i/n, e.g. 0/2")
+            return 2
+        if not (0 <= i_s < n_s):
+            print("--shard i must be in 0..n-1")
+            return 2
+
+        def _shard_of(p):
+            rel = op.relpath(p, args.root).replace("\\", "/").lower()
+            return int(hashlib.md5(rel.encode("utf-8")).hexdigest(), 16) % n_s
+
+        before = len(todo)
+        todo = [r for r in todo if _shard_of(r["bin"]) == i_s]
+        print("\nshard %d of %d: %d of %d remaining files are mine"
+              % (i_s, n_s, len(todo), before))
+
     todo.sort(key=lambda r: r["bytes"] if args.smallest_first else -r["bytes"])
     if args.limit:
         todo = todo[: args.limit]

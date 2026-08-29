@@ -52,6 +52,7 @@ def main() -> int:
     ap.add_argument("--python", default=str(Path(sys.executable).with_name("pythonw.exe")))
     ap.add_argument("--procs", type=int, default=4)
     ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--shard", default="", help="i/n, passed through to the driver")
     ap.add_argument("--log", default=r"D:\temp\ephys_supervisor.log")
     ap.add_argument("--out", default=r"D:\temp\ephys_run.out")
     ap.add_argument("--stop-file", default=r"D:\temp\ephys_stop")
@@ -75,10 +76,11 @@ def main() -> int:
         t0 = time.time()
         with out_path.open("w", encoding="utf-8") as fo, \
                 err_path.open("w", encoding="utf-8") as fe:
-            rc = subprocess.call(
-                [args.python, *DEFAULT_ARGS,
-                 "--procs", str(args.procs), "--threads", str(args.threads)],
-                cwd=str(HERE), stdout=fo, stderr=fe)
+            cmd = [args.python, *DEFAULT_ARGS,
+                   "--procs", str(args.procs), "--threads", str(args.threads)]
+            if args.shard:
+                cmd += ["--shard", args.shard]
+            rc = subprocess.call(cmd, cwd=str(HERE), stdout=fo, stderr=fe)
         dt = time.time() - t0
 
         text = out_path.read_text(encoding="utf-8", errors="replace")
