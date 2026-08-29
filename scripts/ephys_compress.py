@@ -316,6 +316,9 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--max-tb", type=float, help="stop after this much source has been done")
     ap.add_argument("--smallest-first", action="store_true")
+    ap.add_argument("--below-normal", action="store_true",
+                    help="run at below-normal priority so the machine stays usable; workers "
+                         "inherit it from the parent. Windows only, a no-op elsewhere.")
     ap.add_argument("--stop-file", default="",
                     help="path checked before each file and after each completion; create it to "
                          "stop cleanly. Put it somewhere reachable without a shell - on the share "
@@ -381,6 +384,21 @@ def main():
         print("\nstop file %s is present; not starting. Remove it first."
               % args.stop_file)
         return 0
+
+    # Below-normal priority, set on the parent so the pool's workers inherit it. The widefield
+    # campaign held 13 of 16 cores and made the workstation unpleasant to use; this costs nothing
+    # while the machine is idle but lets interactive work preempt. No-op off Windows.
+    if args.below_normal:
+        try:
+            import ctypes
+            BELOW_NORMAL = 0x00004000
+            h = ctypes.windll.kernel32.GetCurrentProcess()
+            if ctypes.windll.kernel32.SetPriorityClass(h, BELOW_NORMAL):
+                print("priority: below normal (workers inherit)")
+            else:
+                print("priority: could not lower it; continuing at normal")
+        except (AttributeError, OSError) as e:
+            print("priority: not adjusted (%s)" % e)
     if args.stop_file:
         print("stop cleanly at any time by creating: %s" % args.stop_file)
     print("\nrunning %d processes x %d threads\n" % (args.procs, args.threads), flush=True)
