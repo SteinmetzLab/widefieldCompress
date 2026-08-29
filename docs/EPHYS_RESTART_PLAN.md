@@ -84,6 +84,47 @@ fails.** On 08-13 the overload killed SSH, which was the only way to stop the jo
 6. **Watch ARC hit ratio, not just load average.** The failure is I/O, so
    `kstat.zfs.misc.arcstats.hits/misses` is the leading indicator. Load average moves late.
 
+## Measured on the workstation, 2026-08-29
+
+Two stages, smallest-first, `--below-normal`, over SMB. **372 files, 1.51 TB, zero failures.**
+sahale's load average stayed at 1.13 throughout - the point of moving the compute here.
+
+| | procs | hours | TB | aggregate | per worker |
+|---|---|---|---|---|---|
+| stage 1 | 2 | 6.20 | 0.500 | 22.4 MB/s | 11.9 MB/s |
+| stage 2 | 4 | 7.72 | 1.005 | 36.2 MB/s | 10.0 MB/s |
+
+**Scaling is sublinear**: doubling the processes gave 1.62x, and per-worker throughput fell from
+11.9 to 10.0 MB/s. At 4 processes x 4 threads the machine's 16 logical cores are exactly
+subscribed, so more processes means oversubscription and the per-worker figure should keep sliding.
+
+### The compression ratio is materially worse than planned
+
+This is the number that matters and it needs correcting twice over.
+
+| measurement | ratio | basis |
+|---|---|---|
+| original estimate | **x2.56** | a single 4 GB *prefix* of one AP file |
+| stage 1 headline | x2.907 | 86% LFP by volume - unrepresentative |
+| stage 1, AP only | x2.15 | 34 small AP files, 0.067 TB |
+| **stages 1+2, AP only** | **x1.94** | **150 files, 0.868 TB** |
+
+The corpus is **92.88 TB of `.ap.bin`** against 2.13 TB of `.lf.bin`, so the AP figure is what
+governs. At x1.94 rather than x2.56:
+
+```
+projected compressed size   48.8 TB   (was ~37 TB)
+projected saving            46.2 TB   (was ~58 TB)
+```
+
+**About 12 TB worse than planned, and roughly $80/month less saved.** Still clearly worth doing -
+46 TB is 46 TB - but the earlier number came from one 4 GB prefix and should not be quoted again.
+
+Caveat in the other direction: smallest-first means everything measured so far is from the small
+end (stage 2 median 7 GB against a corpus AP mean of 61 GB). Ratio is mostly a property of the
+signal rather than the recording length, so this should hold, but it is worth re-checking once
+larger files have been through.
+
 ## Regardless of where it runs
 
 - **Clean up first.** Eight stale `.cbin.partial-*` from the 08-13 crash are still on the share,
