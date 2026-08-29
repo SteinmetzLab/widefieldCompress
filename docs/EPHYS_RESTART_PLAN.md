@@ -180,6 +180,31 @@ fix it with no coordination between machines and no shared state beyond the run 
 Rough arithmetic: workstation ~39 MB/s alone gives ~28 days. Add sahale at 4 processes and the pair
 might reach 80-100 MB/s, which is **11-13 days**.
 
+## The two-machine setup, started 2026-08-29
+
+Deliberately on a Saturday, when the lab is quiet and a mistake costs least.
+
+| | shard | procs | priority | stop file |
+|---|---|---|---|---|
+| workstation | `0/2` | 6 x 4 | below normal | `D:\temp\ephys_stop` |
+| sahale | `1/2` | **2** x 4 | `nice -n 10` | `/mnt/data/data/temp/ephys_stop` = `Y:\temp\ephys_stop` |
+
+The shard split came out at **753 of 1,499 remaining files, 46.80 TB** for sahale - even, and
+verified to agree between the two machines' different path forms before either was started.
+
+**`scripts/sahale_watchdog.py` runs on the workstation**, probing how long a `stat` on `Y:\Subjects`
+takes every 30 s. Three consecutive probes over 5 s and it writes sahale's stop file over SMB. That
+placement is the whole design: on 08-13 the overload killed ssh, which was the only way to stop the
+job, so the abort path must not depend on the machine that is failing. Confirmed `Y:\temp` is
+writable from the workstation before starting - without that the switch is decorative.
+
+sahale went from load average 1.04 to 2.44 on a 40-thread box, which is the point of choosing 2
+processes rather than the 8 that failed in August.
+
+**To stop everything:** create both stop files. Either can be created from the workstation with no
+shell on sahale. In-flight files finish rather than being killed, so nothing is thrown away, and
+the drivers resume from their own logs.
+
 ## Regardless of where it runs
 
 - **Clean up first.** Eight stale `.cbin.partial-*` from the 08-13 crash are still on the share,

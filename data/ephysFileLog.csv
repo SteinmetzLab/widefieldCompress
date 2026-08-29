@@ -1631,3 +1631,9 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-29T21:58:57+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-19\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,2660237195,DESKTOP-KH3D2OM,42652,
 2026-08-29T21:58:57+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-19\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9786,DESKTOP-KH3D2OM,42652,
 2026-08-29T21:58:57+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_042\2025-03-18\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-42652,0,DESKTOP-KH3D2OM,42652,temporary output
+2026-08-29T22:00:18+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-51768,2483944167,DESKTOP-KH3D2OM,51768,renamed into place
+2026-08-29T22:00:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,2483934391,DESKTOP-KH3D2OM,51768,
+2026-08-29T22:00:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9776,DESKTOP-KH3D2OM,51768,
+2026-08-29T22:00:50+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-17500,2624768361,DESKTOP-KH3D2OM,17500,renamed into place
+2026-08-29T22:00:51+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,2624758577,DESKTOP-KH3D2OM,17500,
+2026-08-29T22:00:51+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-23\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9784,DESKTOP-KH3D2OM,17500,
