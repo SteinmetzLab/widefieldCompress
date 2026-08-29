@@ -201,6 +201,14 @@ writable from the workstation before starting - without that the switch is decor
 sahale went from load average 1.04 to 2.44 on a 40-thread box, which is the point of choosing 2
 processes rather than the 8 that failed in August.
 
+**Launch the watchdog detached, not as a foreground job.** It was first started as a background
+task and killed about twenty minutes later by the same lifetime limit that killed stage 3 - so for
+that window the dead-man switch was itself the most fragile thing in the setup. It now runs under
+`pythonw` like the supervisor. A safety mechanism that needs its own babysitter is not one.
+
+Its first thirty minutes recorded **median probe 4 ms and zero strikes**, so two processes on sahale
+leave SMB responsiveness untouched. That 4 ms is the baseline to compare against later.
+
 **To stop everything:** create both stop files. Either can be created from the workstation with no
 shell on sahale. In-flight files finish rather than being killed, so nothing is thrown away, and
 the drivers resume from their own logs.
