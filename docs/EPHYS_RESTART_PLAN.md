@@ -1,0 +1,96 @@
+# Restarting the ephys compression without bricking the file server
+
+Written 2026-08-28, after the widefield campaign finished. The question is how to run mtscomp over
+94.64 TB of raw SpikeGLX without repeating 2026-08-13, when the same job took sahale off the
+network for six hours and needed a remote reboot by the admin.
+
+## What actually happened on 08-13, from the record
+
+Nick's recollection is right: mtscomp was run **on sahale itself, 8 processes x 4 threads**, and
+the server became unreachable. Two details from the logs are worth adding, because both change
+what a safe retry looks like.
+
+**The widefield campaign was running at the same time.** It was reading the same pool over SMB from
+the workstation at 8 jobs x 4 threads. All sixteen output files across both campaigns stopped
+growing within the same minute, 11:39, 34 minutes after ephys started. So 08-13 was *ephys plus
+widefield*, not ephys alone. **We have never actually tested ephys by itself.**
+
+**The benchmark that justified 8x4 was measured on 2 GB samples.** `EPHYS_COMPRESSION.md` records
+8 processes x 4 threads at 138.9 MB/s and concludes "the knee has not been found; 10-12 processes
+are worth trying". That extrapolation is unsafe, and here is why:
+
+| | benchmark | real campaign |
+|---|---|---|
+| file size | 2 GB sample | 275-452 GB each |
+| working set, 8 workers | ~16 GB | **2.2-3.6 TB** |
+| sahale ARC | **209 GB** | 209 GB |
+| result | 138.9 MB/s, fine | wedged in 34 min |
+
+A 2 GB sample is served almost entirely from ARC. Eight concurrent multi-hundred-GB streams blow a
+209 GB cache completely, so every read becomes a disk read - plus eight concurrent writes of the
+`.cbin` output on the same pool. **The benchmark measured a cache-warm case and the campaign was
+cache-hostile.** Load average 35 on a 40-thread box, with the box still answering TCP but no
+application completing a request, is the profile of I/O starvation rather than CPU exhaustion.
+
+Compounding it: the driver defaulted to `--largest-first`, so the first batch was the **eight
+biggest files in the corpus**. That is the worst possible opening move for cache pressure, and it
+also meant zero files had completed when things went wrong - no durable progress at all.
+
+## The recommendation: run it from the workstation, not sahale
+
+The decision to move mtscomp onto sahale was made because a second reader over SMB got **~20 MB/s**.
+But that was measured *while the widefield campaign was saturating the share*. Widefield is done.
+Measured 2026-08-28 with the pool quiet:
+
+```
+SMB sequential read, workstation -> sahale:  201 MB/s
+```
+
+**Ten times the number the original decision rested on.** That decision was correct for the
+conditions it was made in, and those conditions no longer exist.
+
+| | on sahale | on the workstation |
+|---|---|---|
+| throughput | ~139 MB/s measured (contended) | ~70-100 MB/s estimated |
+| corpus time | ~8 days | ~11-18 days |
+| CPU | 32 of 40 threads on the file server | 16 threads on a workstation |
+| **failure mode** | **the lab loses its file server, admin reboot** | the workstation gets slow |
+| recovery | needs someone with root, hours | `BelowNormal` priority, or just stop it |
+| setup | staged files, no pip, no root | `mtscomp`, `numpy`, `tqdm` already installed |
+
+**Roughly double the wall clock in exchange for a failure mode that cannot take the lab offline.**
+There is no deadline on this work. Take the trade.
+
+It also puts the job where the tooling already lives: the file log, the stop-file convention, the
+supervisor pattern, and someone watching it.
+
+## If you want sahale's speed anyway, here is how to test it safely
+
+The governing principle, learned the hard way: **the abort path must not depend on the thing that
+fails.** On 08-13 the overload killed SSH, which was the only way to stop the job.
+
+1. **Add a stop-file check to `ephys_compress.py` first.** On the share, so it can be created over
+   SMB from the workstation with no shell at all - `/mnt/data/data/temp/ephys_stop`. This is a
+   prerequisite, not a nicety.
+2. **Run `--smallest-first`.** Two reasons: checkpoints come in minutes rather than hours, and the
+   stop file is only checked between files, so with 7-hour files an abort request could sit unread
+   for most of a working day.
+3. **Bound every test with `--max-tb`.** The driver already supports it.
+4. **Build an external watchdog on the workstation** that times a small SMB stat against `Y:` every
+   30 seconds and *writes the stop file automatically* when latency crosses a threshold. That is the
+   dead-man switch, and it runs on the machine that is not the one failing.
+5. **Ramp from below with evidence.** 2 processes, measure, 3, measure, 4. Never jump to 8. The
+   08-13 configuration is the one known to fail; it is not a starting point.
+6. **Watch ARC hit ratio, not just load average.** The failure is I/O, so
+   `kstat.zfs.misc.arcstats.hits/misses` is the leading indicator. Load average moves late.
+
+## Regardless of where it runs
+
+- **Clean up first.** Eight stale `.cbin.partial-*` from the 08-13 crash are still on the share,
+  ~117 GB. `clean_partials()` in the driver removes them, or delete them by hand.
+- **Expect ~2.56x**, measured twice on real data, so ~94.64 TB becomes ~37 TB. Note that while both
+  copies exist the pool and the Backblaze bill carry the sum, roughly +37 TB until the `.bin`
+  originals are deleted.
+- **The deletion gate does not cover ephys.** `delete_tar.py` is widefield-specific. Deleting
+  `.bin` files after compression needs its own equivalent, and mtscomp's own verify pass is the
+  natural basis for it.
