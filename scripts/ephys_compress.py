@@ -1,4 +1,16 @@
-"""Bulk mtscomp driver, to run ON sahale. Never deletes anything.
+"""Bulk mtscomp driver. Never deletes anything.
+
+**Where to run it, updated 2026-08-28.** This was written to run on sahale, because a second reader
+over SMB got ~20 MB/s - but that was measured while the widefield campaign was saturating the
+share. With the pool quiet, SMB from the workstation reads at **201 MB/s**, so the job can run
+here instead. That costs roughly double the wall clock and buys a failure mode that cannot take the
+lab's file server offline, which is what happened on 2026-08-13. See `docs/EPHYS_RESTART_PLAN.md`.
+
+    # from the workstation, over SMB, the recommended way
+    python scripts/ephys_compress.py --root \\\\sahale.biostr.washington.edu\\data\\Subjects \\
+        --procs 2 --threads 4 --smallest-first --max-tb 0.5 \\
+        --stop-file D:\\temp\\ephys_stop
+
 
 Standalone on purpose. `wfcompress.lab.batch` cannot be reused here: it annotates with `X | None`
 and its package `__init__` imports `imagecodecs`, which has no FreeBSD wheels. This needs only
@@ -182,10 +194,19 @@ class _NoBar:
 
 def process_one(job):
     """Compress one file. Runs in a child process; returns a plain dict."""
-    rec, threads, file_log_path = job
+    rec, threads, file_log_path, stop_file = job
     t0 = time.time()
     out = {"bin": rec["bin"], "cbin": rec["cbin"], "bytes": rec["bytes"],
            "n_channels": rec["n_channels"], "sample_rate": rec["sample_rate"], "ok": False}
+
+    # Checked here as well as in the dispatch loop. On 2026-08-13 this job took the file server off
+    # the network and the overload removed the only way to stop it - ssh could not complete a
+    # login. A stop file on the share can be created over SMB with no shell at all. Checking it in
+    # the worker means a queued file is abandoned before it starts, so a stop takes effect within
+    # one file per worker rather than waiting for the whole pool to drain.
+    if stop_file and op.exists(stop_file):
+        out["skipped"] = "stop file present"
+        return out
 
     import mtscomp
     mtscomp.tqdm = _NoBar
@@ -295,6 +316,10 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--max-tb", type=float, help="stop after this much source has been done")
     ap.add_argument("--smallest-first", action="store_true")
+    ap.add_argument("--stop-file", default="",
+                    help="path checked before each file and after each completion; create it to "
+                         "stop cleanly. Put it somewhere reachable without a shell - on the share "
+                         "- so an overloaded server can still be stopped.")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--keep-partials", action="store_true")
     args = ap.parse_args()
@@ -352,9 +377,15 @@ def main():
         if n:
             print("removed %d stale temporary file(s), %.1f GB reclaimed" % (n, nb / 1e9))
 
+    if args.stop_file and op.exists(args.stop_file):
+        print("\nstop file %s is present; not starting. Remove it first."
+              % args.stop_file)
+        return 0
+    if args.stop_file:
+        print("stop cleanly at any time by creating: %s" % args.stop_file)
     print("\nrunning %d processes x %d threads\n" % (args.procs, args.threads), flush=True)
     t_start, ok, done_bytes = time.time(), 0, 0
-    jobs = [(r, args.threads, args.file_log) for r in todo]
+    jobs = [(r, args.threads, args.file_log, args.stop_file) for r in todo]
     with ProcessPoolExecutor(args.procs) as pool:
         futures = {pool.submit(process_one, j): j[0] for j in jobs}
         for i, fut in enumerate(as_completed(futures), 1):
@@ -376,6 +407,16 @@ def main():
             else:
                 print("[%d/%d] FAILED %s\n    %s"
                       % (i, len(jobs), res["bin"], res.get("error", "?")), flush=True)
+            if res.get("skipped"):
+                print("[%d/%d] skipped %s (%s)"
+                      % (i, len(jobs), op.basename(op.dirname(res["bin"])), res["skipped"]),
+                      flush=True)
+            if args.stop_file and op.exists(args.stop_file):
+                print(f"\nstop file {args.stop_file} present; cancelling queued work. "
+                      f"Files already running will finish. Rerun to continue.")
+                for f in futures:
+                    f.cancel()
+                break
             if args.max_tb and done_bytes / 1e12 >= args.max_tb:
                 print(f"\nreached --max-tb {args.max_tb:.2f}; stopping. Rerun to continue.")
                 for f in futures:
