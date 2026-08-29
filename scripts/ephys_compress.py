@@ -392,8 +392,15 @@ def main():
         try:
             import ctypes
             BELOW_NORMAL = 0x00004000
-            h = ctypes.windll.kernel32.GetCurrentProcess()
-            if ctypes.windll.kernel32.SetPriorityClass(h, BELOW_NORMAL):
+            k = ctypes.windll.kernel32
+            # argtypes matter here. Without them ctypes marshals the pseudo-handle (HANDLE)-1 as a
+            # 32-bit int, SetPriorityClass rejects it, and the call silently fails - which is
+            # exactly what happened on the first attempt.
+            k.GetCurrentProcess.restype = ctypes.c_void_p
+            k.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+            k.GetPriorityClass.argtypes = [ctypes.c_void_p]
+            h = k.GetCurrentProcess()
+            if k.SetPriorityClass(h, BELOW_NORMAL) and k.GetPriorityClass(h) == BELOW_NORMAL:
                 print("priority: below normal (workers inherit)")
             else:
                 print("priority: could not lower it; continuing at normal")
