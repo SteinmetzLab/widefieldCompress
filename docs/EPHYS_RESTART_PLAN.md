@@ -125,6 +125,61 @@ end (stage 2 median 7 GB against a corpus AP mean of 61 GB). Ratio is mostly a p
 signal rather than the recording length, so this should hold, but it is worth re-checking once
 larger files have been through.
 
+## Is it CPU-bound or transfer-bound? Measured 2026-08-29: CPU, decisively
+
+Both sides measured at once while the campaign ran at 6 processes x 4 threads:
+
+```
+ephys CPU          14.3 of 16 cores        90% of the machine
+SMB read           46.8 MB/s
+SMB write          20.4 MB/s
+SMB total          67.2 MB/s               33% of the 201 MB/s the link gives
+```
+
+**The workstation is saturated and the network is not.** Confirmed by the scaling curve too:
+
+| procs | aggregate | gain |
+|---|---|---|
+| 2 | 22.4 MB/s | |
+| 4 | 36.2 MB/s | +62% |
+| 6 | ~39 MB/s | **+8%** |
+
+Six processes buy almost nothing over four, which is what hitting a CPU ceiling looks like. There
+is no point going higher on this machine.
+
+The SMB arithmetic is worth keeping: 67.2 MB/s of network for 39 MB/s of source is **1.7x**, made
+up of the read (1.2x - the extra covers mtscomp re-reading the `.cbin` during its verify pass) and
+the write (0.52x, matching the compression ratio). So each MB/s of compression costs ~1.7 MB/s of
+SMB, and the ~134 MB/s of spare link supports roughly **79 MB/s more source throughput** before the
+network becomes the constraint.
+
+**The driver does not instrument this itself** - `elapsed_s` is wall time per file and nothing more.
+These figures come from outside it: NIC byte counters and per-process CPU time sampled over the same
+window. That is the cleaner way to measure it and I would not complicate the driver to reproduce it.
+
+### So yes, more compute would scale - roughly 3x before SMB bites
+
+Two places it could come from.
+
+**sahale itself is the interesting one, because it reads locally and costs no SMB at all.** It has
+40 threads against this machine's 16 and is currently idle at load 1.04. Even a modest 4 processes
+there would add meaningfully without touching the link. The obvious objection is 2026-08-13 - but
+that was ephys at 8x4 *while the widefield campaign was also hammering the same pool from the
+workstation*, and widefield is finished. The stop file now exists too, which is what turned that
+incident from recoverable into a reboot. Starting at 2-4 processes with the external watchdog
+described above, and ramping on measurement, is a different proposition from what failed.
+
+**Another lab machine over SMB** is the lower-risk option: there is headroom for roughly two more
+workstations at the current rate, and the worst case is that machine getting slow.
+
+**Either needs sharding first.** Two instances pointed at the same corpus would both select the same
+files and duplicate the work - the `.partial-<pid>` naming stops them corrupting each other, but
+nothing stops them racing. A `--shard i/n` option partitioning on a stable hash of the path would
+fix it with no coordination between machines and no shared state beyond the run log.
+
+Rough arithmetic: workstation ~39 MB/s alone gives ~28 days. Add sahale at 4 processes and the pair
+might reach 80-100 MB/s, which is **11-13 days**.
+
 ## Regardless of where it runs
 
 - **Clean up first.** Eight stale `.cbin.partial-*` from the 08-13 crash are still on the share,
