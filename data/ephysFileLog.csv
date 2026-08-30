@@ -1649,3 +1649,243 @@ timestamp_utc,event,path,size_bytes,host,pid,note
 2026-08-29T22:24:12+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
 2026-08-29T22:24:12+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
 2026-08-29T22:24:12+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T22:40:05+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,3912789159,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-29T22:40:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3912779272,DESKTOP-KH3D2OM,61308,
+2026-08-29T22:40:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9887,DESKTOP-KH3D2OM,61308,
+2026-08-29T22:40:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-29T22:40:06+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_021\2024-08-28\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-59992,3844813996,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-29T22:40:06+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_021\2024-08-28\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3844804139,DESKTOP-KH3D2OM,59992,
+2026-08-29T22:40:06+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_021\2024-08-28\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9857,DESKTOP-KH3D2OM,59992,
+2026-08-29T22:40:06+00:00,create,Y:/Subjects\AB_0019\2022-05-23\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-29T22:40:09+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_008\2025-07-31\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,3791362527,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-29T22:40:10+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_008\2025-07-31\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3791352641,DESKTOP-KH3D2OM,17180,
+2026-08-29T22:40:10+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_008\2025-07-31\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9886,DESKTOP-KH3D2OM,17180,
+2026-08-29T22:40:10+00:00,create,Y:/Subjects\ZYE_0057\2022-03-17\1\p4_g0\p4_g0_imec0\p4_g0_t0.imec0.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-29T22:40:16+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_019\2024-07-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,3821228630,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-29T22:40:16+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_019\2024-07-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3821218773,DESKTOP-KH3D2OM,51416,
+2026-08-29T22:40:16+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_019\2024-07-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9857,DESKTOP-KH3D2OM,51416,
+2026-08-29T22:40:16+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-29T22:40:25+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,3860352501,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-29T22:40:25+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3860342614,DESKTOP-KH3D2OM,16372,
+2026-08-29T22:40:25+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9887,DESKTOP-KH3D2OM,16372,
+2026-08-29T22:40:25+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T22:40:38+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-50908,3823668254,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-29T22:40:38+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3823658358,DESKTOP-KH3D2OM,50908,
+2026-08-29T22:40:38+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-03-25\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9896,DESKTOP-KH3D2OM,50908,
+2026-08-29T22:40:38+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-29T22:59:41+00:00,delete,Y:/Subjects\AB_0019\2022-05-23\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,2233235693,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-29T22:59:41+00:00,create,Y:/Subjects\AB_0019\2022-05-23\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2233122943,DESKTOP-KH3D2OM,59992,
+2026-08-29T22:59:41+00:00,create,Y:/Subjects\AB_0019\2022-05-23\1\p0_g0\p0_g0_t0.imec0.lf.ch,112750,DESKTOP-KH3D2OM,59992,
+2026-08-29T22:59:41+00:00,create,Y:/Subjects\AB_0030\2023-12-03\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-29T22:59:50+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,3802858496,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-29T22:59:50+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3802848610,DESKTOP-KH3D2OM,61308,
+2026-08-29T22:59:50+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-30\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9886,DESKTOP-KH3D2OM,61308,
+2026-08-29T22:59:50+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_005\2025-06-11\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-29T22:59:52+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-16372,3892650365,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-29T22:59:52+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3892640445,DESKTOP-KH3D2OM,16372,
+2026-08-29T22:59:52+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9920,DESKTOP-KH3D2OM,16372,
+2026-08-29T22:59:52+00:00,create,Y:/Subjects\AB_0035\2024-05-28\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T22:59:54+00:00,delete,Y:/Subjects\ZYE_0057\2022-03-17\1\p4_g0\p4_g0_imec0\p4_g0_t0.imec0.ap.cbin.partial-17180,3253968321,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-29T22:59:54+00:00,create,Y:/Subjects\ZYE_0057\2022-03-17\1\p4_g0\p4_g0_imec0\p4_g0_t0.imec0.ap.cbin,3253958418,DESKTOP-KH3D2OM,17180,
+2026-08-29T22:59:54+00:00,create,Y:/Subjects\ZYE_0057\2022-03-17\1\p4_g0\p4_g0_imec0\p4_g0_t0.imec0.ap.ch,9903,DESKTOP-KH3D2OM,17180,
+2026-08-29T22:59:54+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_042\2025-03-19\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-29T22:59:55+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,4067914054,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-29T22:59:55+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,4067904130,DESKTOP-KH3D2OM,50908,
+2026-08-29T22:59:55+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9924,DESKTOP-KH3D2OM,50908,
+2026-08-29T22:59:55+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-29T22:59:57+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-51416,3796292132,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-29T22:59:58+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3796282215,DESKTOP-KH3D2OM,51416,
+2026-08-29T22:59:58+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-10\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9917,DESKTOP-KH3D2OM,51416,
+2026-08-29T22:59:58+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p1_g0\p1_g0_t0.imec0.lf.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-29T23:18:59+00:00,delete,Y:/Subjects\AB_0030\2023-12-04\1\p1_g0\p1_g0_t0.imec0.lf.cbin.partial-51416,2015146950,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-29T23:18:59+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p1_g0\p1_g0_t0.imec0.lf.cbin,2015033861,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:18:59+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p1_g0\p1_g0_t0.imec0.lf.ch,113089,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:18:59+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-07\003\raw_ephys_data\_spikeglx_ephysData__g0\_spikeglx_ephysData__g0_imec1\_spikeglx_ephysData__g0_t0.imec1.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-29T23:19:10+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_042\2025-03-19\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,3942827123,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-29T23:19:10+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_042\2025-03-19\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3942817173,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:19:10+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_042\2025-03-19\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9950,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:19:11+00:00,create,Y:/Subjects\AB_0034\2024-01-19\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-29T23:19:22+00:00,delete,Y:/Subjects\AB_0030\2023-12-03\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,2186538775,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-29T23:19:22+00:00,create,Y:/Subjects\AB_0030\2023-12-03\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2186425884,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:19:22+00:00,create,Y:/Subjects\AB_0030\2023-12-03\1\p0_g0\p0_g0_t0.imec0.lf.ch,112891,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:19:22+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-29T23:19:24+00:00,delete,Y:/Subjects\AB_0030\2023-12-04\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-50908,2173723636,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-29T23:19:24+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2173610378,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:19:24+00:00,create,Y:/Subjects\AB_0030\2023-12-04\1\p0_g0\p0_g0_t0.imec0.lf.ch,113258,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:19:24+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-29T23:19:27+00:00,delete,Y:/Subjects\AB_0035\2024-05-28\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-16372,2350505194,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-29T23:19:27+00:00,create,Y:/Subjects\AB_0035\2024-05-28\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2350392019,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:19:27+00:00,create,Y:/Subjects\AB_0035\2024-05-28\1\p0_g0\p0_g0_t0.imec0.lf.ch,113175,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:19:27+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T23:19:29+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_005\2025-06-11\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,2443899527,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-29T23:19:30+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_005\2025-06-11\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,2443889661,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:19:30+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_005\2025-06-11\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9866,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:19:30+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-29T23:36:39+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-07\003\raw_ephys_data\_spikeglx_ephysData__g0\_spikeglx_ephysData__g0_imec1\_spikeglx_ephysData__g0_t0.imec1.ap.cbin.partial-51416,4019715622,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-29T23:36:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-07\003\raw_ephys_data\_spikeglx_ephysData__g0\_spikeglx_ephysData__g0_imec1\_spikeglx_ephysData__g0_t0.imec1.ap.cbin,4019705670,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:36:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-07\003\raw_ephys_data\_spikeglx_ephysData__g0\_spikeglx_ephysData__g0_imec1\_spikeglx_ephysData__g0_t0.imec1.ap.ch,9952,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:36:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-29T23:36:45+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-59992,3880804120,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-29T23:36:46+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3880794140,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:36:46+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9980,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:36:46+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-29T23:37:02+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,3932817799,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-29T23:37:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3932807815,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:37:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9984,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:37:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-29T23:37:54+00:00,delete,Y:/Subjects\AB_0034\2024-01-19\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-17180,2137842165,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-29T23:37:54+00:00,create,Y:/Subjects\AB_0034\2024-01-19\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2137728755,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:37:54+00:00,create,Y:/Subjects\AB_0034\2024-01-19\1\p0_g0\p0_g0_t0.imec0.lf.ch,113410,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:37:54+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-29T23:37:57+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-16372,2590016814,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-29T23:37:58+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,2590006878,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:37:58+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9936,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:37:58+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T23:38:50+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-50908,2824751987,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-29T23:38:50+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,2824742042,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:38:50+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9945,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:38:50+00:00,create,Y:/Subjects\AB_0024\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-29T23:53:21+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-59992,3878673368,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-29T23:53:21+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3878663389,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:53:21+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9979,DESKTOP-KH3D2OM,59992,
+2026-08-29T23:53:21+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-29T23:53:40+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-61308,3934792817,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-29T23:53:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3934782835,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:53:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,9982,DESKTOP-KH3D2OM,61308,
+2026-08-29T23:53:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-29T23:54:17+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,3838959209,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-29T23:54:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3838949231,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:54:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_033\2025-04-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9978,DESKTOP-KH3D2OM,51416,
+2026-08-29T23:54:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_016\2024-06-04\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-29T23:54:21+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,3879001658,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-29T23:54:22+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3878991679,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:54:22+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-02\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9979,DESKTOP-KH3D2OM,16372,
+2026-08-29T23:54:22+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-29T23:54:39+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,3879001658,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-29T23:54:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3878991679,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:54:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9979,DESKTOP-KH3D2OM,17180,
+2026-08-29T23:54:40+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-29T23:55:18+00:00,delete,Y:/Subjects\AB_0024\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-50908,2277496422,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-29T23:55:18+00:00,create,Y:/Subjects\AB_0024\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2277382705,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:55:18+00:00,create,Y:/Subjects\AB_0024\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.ch,113717,DESKTOP-KH3D2OM,50908,
+2026-08-29T23:55:19+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_010\2024-04-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T00:10:02+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-59992,3839840425,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-30T00:10:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3839830449,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:10:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,9976,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:10:02+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-30T00:10:05+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_016\2024-06-04\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-51416,3840695369,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-30T00:10:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_016\2024-06-04\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3840685367,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:10:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_016\2024-06-04\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10002,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:10:05+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-30T00:10:10+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-61308,4080800328,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-30T00:10:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,4080790343,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:10:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-11\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,9985,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:10:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-30T00:10:20+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,3855270014,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-30T00:10:20+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3855260004,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:10:20+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,10010,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:10:20+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-30T00:10:54+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-17180,3850721378,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-30T00:10:54+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3850711368,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:10:54+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-06\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10010,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:10:54+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-30T00:11:47+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_010\2024-04-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,3985836896,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-30T00:11:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_010\2024-04-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3985826882,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:11:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_010\2024-04-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10014,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:11:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T00:26:18+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,4102202783,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-30T00:26:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,4102192768,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:26:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10015,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:26:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-13\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-30T00:26:21+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-59992,3889512086,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-30T00:26:21+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3889502076,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:26:21+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_043\2025-04-09\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10010,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:26:21+00:00,create,Y:/Subjects\AB_0025\2022-09-21\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-30T00:26:46+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-61308,3910485955,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-30T00:26:46+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3910475914,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:26:46+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10041,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:26:46+00:00,create,Y:/Subjects\AB_0025\2022-08-30\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-30T00:27:15+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-17180,3875108283,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-30T00:27:15+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3875098242,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:27:15+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10041,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:27:15+00:00,create,Y:/Subjects\KM_037\2024-12-20\7\p3_g0\p3_g0_imec0\p3_g0_t0.imec0.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-30T00:28:17+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,2916585035,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-30T00:28:17+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,2916575023,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:28:17+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_044\2025-04-29\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,10012,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:28:17+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-30T00:29:38+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-50908,2730723519,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-30T00:29:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,2730713516,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:29:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_046\2025-07-08\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,10003,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:29:39+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T00:43:11+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-13\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,4145772414,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-30T00:43:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-13\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,4145762336,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:43:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_061\2025-11-13\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10078,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:43:11+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_031\2024-11-21\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-30T00:44:16+00:00,delete,Y:/Subjects\AB_0025\2022-09-21\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,2103460727,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-30T00:44:17+00:00,create,Y:/Subjects\AB_0025\2022-09-21\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2103345793,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:44:17+00:00,create,Y:/Subjects\AB_0025\2022-09-21\1\p0_g0\p0_g0_t0.imec0.lf.ch,114934,DESKTOP-KH3D2OM,59992,
+2026-08-30T00:44:17+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-02-27\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-30T00:44:24+00:00,delete,Y:/Subjects\AB_0025\2022-08-30\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-61308,2241702405,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-30T00:44:25+00:00,create,Y:/Subjects\AB_0025\2022-08-30\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2241587319,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:44:25+00:00,create,Y:/Subjects\AB_0025\2022-08-30\1\p0_g0\p0_g0_t0.imec0.lf.ch,115086,DESKTOP-KH3D2OM,61308,
+2026-08-30T00:44:25+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-30T00:45:24+00:00,delete,Y:/Subjects\KM_037\2024-12-20\7\p3_g0\p3_g0_imec0\p3_g0_t0.imec0.ap.cbin.partial-17180,2619151924,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-30T00:45:25+00:00,create,Y:/Subjects\KM_037\2024-12-20\7\p3_g0\p3_g0_imec0\p3_g0_t0.imec0.ap.cbin,2619141866,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:45:25+00:00,create,Y:/Subjects\KM_037\2024-12-20\7\p3_g0\p3_g0_imec0\p3_g0_t0.imec0.ap.ch,10058,DESKTOP-KH3D2OM,17180,
+2026-08-30T00:45:25+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-30T00:46:08+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,3930289306,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-30T00:46:09+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3930279172,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:46:09+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10134,DESKTOP-KH3D2OM,50908,
+2026-08-30T00:46:09+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T00:46:47+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-16372,2890986423,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-30T00:46:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,2890976320,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:46:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\MT_007\2025-12-17\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,10103,DESKTOP-KH3D2OM,16372,
+2026-08-30T00:46:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-30T00:59:48+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_031\2024-11-21\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-51416,4124944607,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-30T00:59:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_031\2024-11-21\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,4124934468,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:59:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_031\2024-11-21\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10139,DESKTOP-KH3D2OM,51416,
+2026-08-30T00:59:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-30T01:01:00+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-02-27\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-59992,3858315554,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-30T01:01:01+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-02-27\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3858305390,DESKTOP-KH3D2OM,59992,
+2026-08-30T01:01:01+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-02-27\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10164,DESKTOP-KH3D2OM,59992,
+2026-08-30T01:01:01+00:00,create,Y:/Subjects\AB_0025\2022-09-12\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-30T01:01:06+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-17180,3950871718,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-30T01:01:06+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,3950861552,DESKTOP-KH3D2OM,17180,
+2026-08-30T01:01:06+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10166,DESKTOP-KH3D2OM,17180,
+2026-08-30T01:01:06+00:00,create,Y:/Subjects\AB_0043\2025-01-27\1\p1_g0\p1_g0_t0.imec0.lf.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-30T01:01:07+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-61308,3977186258,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-30T01:01:07+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin,3977176092,DESKTOP-KH3D2OM,61308,
+2026-08-30T01:01:07+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.ch,10166,DESKTOP-KH3D2OM,61308,
+2026-08-30T01:01:07+00:00,create,Y:/Subjects\AB_0025\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-30T01:01:34+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-50908,3952882169,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-30T01:01:34+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3952872004,DESKTOP-KH3D2OM,50908,
+2026-08-30T01:01:34+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_030\2024-10-03\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10165,DESKTOP-KH3D2OM,50908,
+2026-08-30T01:01:34+00:00,create,Y:/Subjects\ZYE_0007\2020-09-22\1\p1_g0\p1_g0_imec0\p1_g0_t0.imec0.lf.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T01:02:17+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-16372,3993255868,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-30T01:02:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin,3993245702,DESKTOP-KH3D2OM,16372,
+2026-08-30T01:02:18+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.ch,10166,DESKTOP-KH3D2OM,16372,
+2026-08-30T01:02:18+00:00,create,Y:/Subjects\AB_0025\2022-08-25\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
+2026-08-30T01:15:47+00:00,delete,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin.partial-51416,4007720733,DESKTOP-KH3D2OM,51416,renamed into place
+2026-08-30T01:15:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.cbin,4007710565,DESKTOP-KH3D2OM,51416,
+2026-08-30T01:15:48+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_012\2024-03-01\002\raw_ephys_data\probe00\_spikeglx_ephysData_g0_t0.imec0.ap.ch,10168,DESKTOP-KH3D2OM,51416,
+2026-08-30T01:15:48+00:00,create,Y:/Subjects\AB_0023\2022-08-25\3\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-51416,0,DESKTOP-KH3D2OM,51416,temporary output
+2026-08-30T01:17:57+00:00,delete,Y:/Subjects\ZYE_0007\2020-09-22\1\p1_g0\p1_g0_imec0\p1_g0_t0.imec0.lf.cbin.partial-50908,1929137483,DESKTOP-KH3D2OM,50908,renamed into place
+2026-08-30T01:17:58+00:00,create,Y:/Subjects\ZYE_0007\2020-09-22\1\p1_g0\p1_g0_imec0\p1_g0_t0.imec0.lf.cbin,1929021529,DESKTOP-KH3D2OM,50908,
+2026-08-30T01:17:58+00:00,create,Y:/Subjects\ZYE_0007\2020-09-22\1\p1_g0\p1_g0_imec0\p1_g0_t0.imec0.lf.ch,115954,DESKTOP-KH3D2OM,50908,
+2026-08-30T01:17:58+00:00,create,Y:/Subjects\AB_0025\2022-08-24\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-50908,0,DESKTOP-KH3D2OM,50908,temporary output
+2026-08-30T01:18:54+00:00,delete,Y:/Subjects\AB_0043\2025-01-27\1\p1_g0\p1_g0_t0.imec0.lf.cbin.partial-17180,2258368240,DESKTOP-KH3D2OM,17180,renamed into place
+2026-08-30T01:18:55+00:00,create,Y:/Subjects\AB_0043\2025-01-27\1\p1_g0\p1_g0_t0.imec0.lf.cbin,2258252138,DESKTOP-KH3D2OM,17180,
+2026-08-30T01:18:55+00:00,create,Y:/Subjects\AB_0043\2025-01-27\1\p1_g0\p1_g0_t0.imec0.lf.ch,116102,DESKTOP-KH3D2OM,17180,
+2026-08-30T01:18:55+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_024\2025-02-18\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-17180,0,DESKTOP-KH3D2OM,17180,temporary output
+2026-08-30T01:19:13+00:00,delete,Y:/Subjects\AB_0025\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-61308,2354809835,DESKTOP-KH3D2OM,61308,renamed into place
+2026-08-30T01:19:13+00:00,create,Y:/Subjects\AB_0025\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2354693527,DESKTOP-KH3D2OM,61308,
+2026-08-30T01:19:13+00:00,create,Y:/Subjects\AB_0025\2022-09-02\1\p0_g0\p0_g0_t0.imec0.lf.ch,116308,DESKTOP-KH3D2OM,61308,
+2026-08-30T01:19:13+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_024\2025-02-18\002\raw_ephys_data\probe01\_spikeglx_ephysData_g0_t0.imec1.ap.cbin.partial-61308,0,DESKTOP-KH3D2OM,61308,temporary output
+2026-08-30T01:19:18+00:00,delete,Y:/Subjects\AB_0025\2022-09-12\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-59992,2455564286,DESKTOP-KH3D2OM,59992,renamed into place
+2026-08-30T01:19:18+00:00,create,Y:/Subjects\AB_0025\2022-09-12\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2455448133,DESKTOP-KH3D2OM,59992,
+2026-08-30T01:19:18+00:00,create,Y:/Subjects\AB_0025\2022-09-12\1\p0_g0\p0_g0_t0.imec0.lf.ch,116153,DESKTOP-KH3D2OM,59992,
+2026-08-30T01:19:19+00:00,create,Y:/Subjects\IBL\quarterDensityRecordings\Subjects\KM_028\2024-10-29\002\raw_ephys_data\probe02\_spikeglx_ephysData_g0_t0.imec2.ap.cbin.partial-59992,0,DESKTOP-KH3D2OM,59992,temporary output
+2026-08-30T01:20:21+00:00,delete,Y:/Subjects\AB_0025\2022-08-25\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-16372,2363388313,DESKTOP-KH3D2OM,16372,renamed into place
+2026-08-30T01:20:22+00:00,create,Y:/Subjects\AB_0025\2022-08-25\1\p0_g0\p0_g0_t0.imec0.lf.cbin,2363271717,DESKTOP-KH3D2OM,16372,
+2026-08-30T01:20:22+00:00,create,Y:/Subjects\AB_0025\2022-08-25\1\p0_g0\p0_g0_t0.imec0.lf.ch,116596,DESKTOP-KH3D2OM,16372,
+2026-08-30T01:20:22+00:00,create,Y:/Subjects\AB_0023\2022-08-24\1\p0_g0\p0_g0_t0.imec0.lf.cbin.partial-16372,0,DESKTOP-KH3D2OM,16372,temporary output
