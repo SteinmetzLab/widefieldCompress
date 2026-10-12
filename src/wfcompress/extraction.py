@@ -166,8 +166,15 @@ def extract(
     whole = len(pairs) == n and [p[0] for p in pairs] == list(range(n))
     effective_order = "storage" if footer.order is None else order
 
-    members, zero_entries = _headers(footer)
-    if len(members) != n:
+    if container.is_wfacq(meta):
+        # No tar and no per-frame files: the "original files" are wf.bin and the session files.
+        if fmt == "files":
+            raise ValueError(f"{src} was made from a wfAcq session; use `wfcompress restore` to "
+                             f"get wf.bin and the session files back, or --bin for frames")
+        members, zero_entries = [], []
+    else:
+        members, zero_entries = _headers(footer)
+    if not container.is_wfacq(meta) and len(members) != n:
         raise LosslessCheckFailed(
             f"{src}: footer lists {len(members)} data members but meta says {n} frames"
         )
