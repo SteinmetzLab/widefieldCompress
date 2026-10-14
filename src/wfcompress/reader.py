@@ -102,8 +102,24 @@ class WfzReader:
         return self.frame(int(key))
 
     def member_name(self, i: int) -> str:
-        """Original tar member name of acquisition frame ``i``."""
+        """Original tar member name of acquisition frame ``i``.
+
+        A file made from a wfAcq session has no member names; this returns ``"wf.bin frame i"``.
+        """
+        if container.is_wfacq(self.meta):
+            if not 0 <= i < self.n_frames:
+                raise IndexError(f"frame {i} out of range (0..{self.n_frames - 1})")
+            return f"wf.bin frame {i}"
         return self._member_names()[self.footer.storage_index(i)]
+
+    # -- wfAcq sessions --------------------------------------------------------------------
+    def session_files(self) -> list[str]:
+        """Names of the small session files stored with the frames (wfAcq sessions only)."""
+        return sorted(self.meta.get("session_files", {}))
+
+    def session_file(self, name: str) -> bytes:
+        """One stored session file, e.g. ``"wf_frames.npy"``, exactly as it was on disk."""
+        return container.read_session_file(self.path, name)
 
     def _member_names(self) -> list[str]:
         if not hasattr(self, "_names"):

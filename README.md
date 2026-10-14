@@ -121,6 +121,46 @@ Compression destroys the constant member stride the original archives had, so th
 restores O(1) random access. The rebuild metadata costs **~0.01 % of the output**, which is why
 byte-identical restore is worth keeping rather than settling for same-pixels.
 
+Tar sources are written as format version 2. Version 3 is written only for wfAcq sessions (below):
+it has no tar entries, an identity `order.npy`, and the small session files under `session/`. A
+reader that predates version 3 refuses those files with an upgrade message, so every environment
+that reads `.wfz` files (DataBrowser included) needs this version before the first one appears.
+
+## wfAcq sessions
+
+[wfAcq](https://github.com/SteinmetzLab/wfAcq) writes `wf.bin` (raw `uint16`, little-endian, frames x
+height x width) plus a few small files, specified in wfAcq's `FORMAT.md`. A cleanly closed session
+folder compresses to `widefield.wfz` beside it, the name DataBrowser looks for:
+
+```bash
+wfcompress compress path/to/session/            # compress, then verify the rebuild, then receipt
+wfcompress check    path/to/session/widefield.wfz
+wfcompress restore  path/to/session/widefield.wfz ./restored/       # wf.bin + every small file
+wfcompress restore  path/to/session/widefield.wfz path/to/session/ --bin-only
+```
+
+- **Only sessions with `closed_cleanly: true` are accepted.** A session that did not finish
+  closing can leave a partial frame or unrecorded frames in `wf.bin`, so it is refused for a person
+  to look at. So are sessions whose files are newer than an hour (`--min-age-s`), whose `wf.bin`
+  size disagrees with `bin_bytes`, or whose frames tables disagree with each other.
+- Geometry comes from `wf_meta.json`, never from the file size. Values are stored unshifted.
+- The small files are stored inside the `.wfz` as well as left in place, so the frames cannot be
+  separated from their counters, timestamps and labels.
+- `check` proves the `.wfz` holds exactly the bytes read from `wf.bin`. It does not prove that the
+  copy that was read was complete. Deleting `wf.bin` should also re-hash it against
+  `source_bin_sha256` in the receipt. Nothing here deletes anything.
+- The `.wfz`, the restored files and the receipt never replace anything: each refuses an existing
+  file, including one that appears while a run is in progress. The `.wfz.README.md` and
+  `.wfz.frame.tif` beside it only describe the `.wfz`, and are rewritten if present.
+
+Measured on 42,000 real 560 x 560 frames (10 minutes at 70 Hz, 26.3 GB, from a local SATA SSD) on
+a Ryzen 7 3700X at below-normal priority, compress plus the streaming verify:
+
+| threads | compress | verify | per hour of recording | ratio |
+|---|---|---|---|---|
+| 4 | 145 MB/s | 269 MB/s | 28 min | 2.62 |
+| 8 | 224 MB/s | 402 MB/s | 18 min | 2.62 |
+
 ## Layout
 
 | | |
@@ -142,7 +182,8 @@ Python ≥ 3.10, `numpy`, `imagecodecs`, `tifffile`, `zstandard`.
 - Headerless archives carry no geometry, so `--shape ROWS COLS` is required for them. Frames are
   not always square; a wrong shape produces a garbled but plausible image, so a mismatch between
   the supplied shape and the member size is a hard error.
-- Single archive per invocation. Use `wfcompress.lab.batch` for bulk runs.
+- Single archive or session per invocation. Use `wfcompress.lab.batch` for bulk tar runs; there is
+  no batch driver for wfAcq sessions yet.
 
 ## Licence
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import socket
 import time
 import zlib
 from collections.abc import Callable
@@ -77,8 +78,43 @@ def _assert_distinct(src: Path, dst: Path) -> None:
 WRITE_BUFFER = 16 << 20
 
 
+def _partial_name(dst: Path, no_clobber: bool = False) -> Path:
+    # With no_clobber the host is in the name too: two machines writing to one share can have the
+    # same pid. The tar path keeps its original name.
+    if no_clobber:
+        return dst.with_name(f"{dst.name}.partial-{socket.gethostname()}-{os.getpid()}")
+    return dst.with_name(f"{dst.name}.partial-{os.getpid()}")
+
+
+#: On Windows a plain rename refuses an existing target; elsewhere rename silently replaces it.
+_RENAME_REFUSES_EXISTING = os.name == "nt"
+
+
+def _commit_no_clobber(tmp: Path, dst: Path) -> None:
+    """Rename ``tmp`` to ``dst``, raising FileExistsError rather than replacing anything there.
+
+    Checking for ``dst`` first and then calling os.replace leaves a window of minutes, the length of
+    the whole write, in which a file that appears would be silently replaced.
+    """
+    if _RENAME_REFUSES_EXISTING:
+        os.rename(tmp, dst)
+        return
+    try:
+        os.link(tmp, dst)  # refuses an existing target
+    except FileExistsError:
+        raise
+    except OSError:
+        # Hard links are unsupported on many SMB mounts. Claim the name exclusively, then replace
+        # our own empty placeholder, which nothing else can have created.
+        os.close(os.open(dst, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        os.replace(tmp, dst)
+        return
+    os.unlink(tmp)
+
+
 @contextmanager
-def _atomic_output(dst: Path, file_log=None, buffering: int | None = None):
+def _atomic_output(dst: Path, file_log=None, buffering: int | None = None,
+                   no_clobber: bool = False):
     """Write to a temporary file beside the destination and rename only on success.
 
     A crash, a full disk or a dropped SMB connection must not leave a partial file sitting under
@@ -86,17 +122,25 @@ def _atomic_output(dst: Path, file_log=None, buffering: int | None = None):
 
     ``buffering`` resolves to :data:`WRITE_BUFFER` when not given - read at call time, not bound as
     a default, so the module global can be changed to measure its effect.
+
+    ``no_clobber`` makes the final rename fail with FileExistsError if ``dst`` exists by then, even
+    if it appeared during the write.
     """
     buffering = WRITE_BUFFER if buffering is None else buffering
     dst.parent.mkdir(parents=True, exist_ok=True)
     existed = dst.exists()
-    tmp = dst.with_name(f"{dst.name}.partial-{os.getpid()}")
+    tmp = _partial_name(dst, no_clobber)
     try:
         with open(tmp, "wb", buffering=buffering) as fh:
             filelog.record(file_log, "create", tmp, size_bytes=0, note="temporary output")
             yield fh
             fh.flush()
             os.fsync(fh.fileno())
+        if no_clobber:
+            _commit_no_clobber(tmp, dst)
+            filelog.record(file_log, "delete", tmp, note="renamed into place")
+            filelog.record_write(file_log, dst, False)
+            return
         filelog.record(file_log, "delete", tmp, note="renamed into place")
         os.replace(tmp, dst)
         filelog.record_write(file_log, dst, existed)
@@ -526,6 +570,8 @@ def iter_tar_bytes(
     t0 = time.perf_counter()
     footer = container.read_footer(src)
     meta, index = footer.meta, footer.index
+    if container.is_wfacq(meta):
+        raise ValueError(f"{src} was made from a wfAcq session, not a tar; use restore")
 
     n = meta["n_frames"]
     dtype = np.dtype(meta["dtype"])
@@ -560,6 +606,9 @@ def iter_tar_bytes(
                         header_i * tarwalk.BLOCK : (header_i + 1) * tarwalk.BLOCK
                     ]
                     header_i += 1
+                    if len(h) != tarwalk.BLOCK:
+                        # An exhausted header blob parses as size 0 forever; fail, do not spin.
+                        raise LosslessCheckFailed(f"{src}: tar headers end before frame {_i}")
                     yield h
                     if int(h[124:136].rstrip(b"\0 ").decode("ascii", "replace") or "0", 8):
                         break
@@ -600,6 +649,9 @@ def decompress(
     t0 = time.perf_counter()
     _assert_distinct(src, dst)
     meta = container.read_meta(src)
+    if container.is_wfacq(meta):
+        raise ValueError(f"{src} was made from a wfAcq session, not a tar; use "
+                         f"`wfcompress restore` to write wf.bin and the session files")
 
     # Every byte passes through here anyway, so hashing costs almost nothing and turns
     # decompression into its own proof rather than something a separate check has to confirm.
@@ -647,6 +699,10 @@ def verify(
     src = Path(src)
     t0 = time.perf_counter()
     meta = container.read_meta(src)
+    if container.is_wfacq(meta):
+        from . import wfacq  # imports this module, so not at the top
+
+        return wfacq.verify_session(src, threads, batch, progress)
     expected = rebuildable_sha256(meta)
     partial = bool(meta.get("partial"))
     expect_bytes = meta.get("frames_tar_bytes") if partial else meta["source_bytes"]

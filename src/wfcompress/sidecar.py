@@ -94,6 +94,75 @@ Full source, format specification and rationale: {repo}
 """
 
 
+WFACQ_README_TEMPLATE = """# {stem}.wfz: a losslessly compressed wfAcq recording
+
+This replaces `wf.bin` from wfAcq session `{session_id}`
+({subject} {session_date} #{session_number}): {n_frames:,} frames of {rows} x {cols}
+uint16. It is **lossless**. {verified_line}
+
+| | |
+|---|---|
+| original wf.bin | {source_bytes:,} bytes, SHA-256 `{bin_sha256}` |
+| compressed | {output_bytes:,} bytes |
+| ratio | **{ratio:.2f}x** ({saved:.1f}% saved) |
+| codec | JPEG-LS, lossless mode (near=0), no bit shift |
+| also inside | {session_files} |
+| written | {written} by wfcompress {version} (`{commit}`) |
+
+Pixel values are camera native, exactly as wfAcq wrote them (0 to 4095 for Mono12). Older
+pylonViewer archives were mostly shifted left by 4 bits, so their values are 16 times larger; this
+file was not shifted.{test_data_note}
+
+## Getting the data back
+
+```bash
+pip install git+{repo}@{commit_ref}
+```
+
+**If you want the session folder back**, `wf.bin` and every small file, byte for byte, into a
+new, empty folder:
+
+```bash
+wfcompress restore {stem}.wfz ./session/
+```
+
+To put back only `wf.bin`, into a session folder that still holds the small files:
+
+```bash
+wfcompress restore {stem}.wfz path/to/session/ --bin-only
+```
+
+**If you want a few frames in Python**, with no intermediate files at all:
+
+```python
+from wfcompress import WfzReader
+with WfzReader("{stem}.wfz") as r:
+    print(r.n_frames, r.shape)
+    frame = r.frame(0)                       # numpy array, frame 0 of wf.bin
+    table = r.session_file("wf_frames.npy")  # bytes of the frames table
+```
+
+**To prove it rebuilds wf.bin**, without writing anything:
+
+```bash
+wfcompress check {stem}.wfz
+```
+
+The frames table, metadata, events and camera settings are stored inside this file, and
+normally also sit as plain files in the session folder, so the frames can never be separated from
+their counters, timestamps and labels.
+
+## Before deleting wf.bin
+
+`wfcompress check` proves this file holds exactly the bytes that were read from `wf.bin`. It does
+not prove that the copy of `wf.bin` that was read was complete. Deleting `wf.bin` is a separate
+decision, and it should also re-hash `wf.bin` and compare with the SHA-256 above (and with any
+hash taken on the acquisition machine), and confirm the SVD and the offsite backup are done.
+
+Full source, format specification and rationale: {repo}
+"""
+
+
 _VERIFIED = (
     "The rebuild has been verified byte-for-byte: the reconstructed archive was hashed end to "
     "end and matched the original."
@@ -111,6 +180,13 @@ def write_readme(wfz_path: str | Path, meta: dict, file_log=None) -> Path:
     stem = wfz_path.name[: -len(".wfz")] if wfz_path.name.endswith(".wfz") else wfz_path.stem
     prov = meta.get("provenance", {})
     commit = prov.get("git_commit") or "unknown"
+    if meta.get("source_kind") == "wfacq_bin":
+        text = _wfacq_readme(stem, meta, prov, commit)
+        out = wfz_path.with_name(wfz_path.name + ".README.md")
+        existed = out.exists()
+        out.write_text(text, encoding="utf-8")
+        filelog.record_write(file_log, out, existed)
+        return out
     shift = meta.get("shift", 0)
     rows, cols = (list(meta.get("shape", (0, 0))) + [0, 0])[:2]
     # `extract --bin` writes little-endian whatever the archive holds, because part of this corpus
@@ -152,6 +228,44 @@ def write_readme(wfz_path: str | Path, meta: dict, file_log=None) -> Path:
     out.write_text(text, encoding="utf-8")
     filelog.record_write(file_log, out, existed)
     return out
+
+
+def _wfacq_readme(stem: str, meta: dict, prov: dict, commit: str) -> str:
+    w = meta.get("wfacq", {})
+    rows, cols = (list(meta.get("shape", (0, 0))) + [0, 0])[:2]
+    return WFACQ_README_TEMPLATE.format(
+        stem=stem,
+        session_id=w.get("session_id"),
+        subject=w.get("subject"),
+        session_date=w.get("session_date"),
+        session_number=w.get("session_number"),
+        n_frames=meta.get("n_frames", 0),
+        rows=rows,
+        cols=cols,
+        verified_line=(
+            "Verified: the rebuilt wf.bin was hashed end to end and matched the original."
+            if meta.get("byte_identical_verified")
+            else "Every frame round-tripped during compression, but the rebuilt wf.bin has "
+                 "**not** been hashed end to end. Run `wfcompress check` on this file."
+        ),
+        source_bytes=meta.get("source_bytes", 0),
+        bin_sha256=meta.get("source_bin_sha256"),
+        output_bytes=meta.get("output_bytes", 0),
+        ratio=meta.get("ratio", 0.0),
+        saved=100 * (1 - meta.get("output_bytes", 0) / max(meta.get("source_bytes", 1), 1)),
+        session_files=", ".join(f"`{n}`" for n in sorted(meta.get("session_files", {}))),
+        test_data_note=(
+            "\n\nThis session was written with wfAcq format version 0, which FORMAT.md calls test "
+            "data whose layout may still change."
+            if w.get("format_version") == 0
+            else ""
+        ),
+        written=prov.get("written_utc", "?"),
+        version=prov.get("version", "?"),
+        commit=commit,
+        commit_ref=commit.split("+")[0] if commit != "unknown" else "main",
+        repo=REPO_URL,
+    )
 
 
 def write_preview_frame(wfz_path: str | Path, n_probe: int = 7, file_log=None) -> Path | None:
@@ -203,6 +317,17 @@ def write_preview_frame(wfz_path: str | Path, n_probe: int = 7, file_log=None) -
             is_tiff=True,
         )
         out.write_bytes(join(pixels, footer_shell, layout))
+    elif meta.get("source_kind") == "wfacq_bin":
+        tifffile.imwrite(
+            out,
+            np.ascontiguousarray(pixels),
+            photometric="minisblack",
+            description=(
+                f"Preview of frame {best_i} of wf.bin from {wfz_path.name}, "
+                f"{meta['shape'][0]}x{meta['shape'][1]} as recorded in wf_meta.json. Camera-native "
+                f"values. See {REPO_URL}"
+            ),
+        )
     else:
         tifffile.imwrite(
             out,
@@ -226,13 +351,40 @@ def _shell_for(wfz_path: Path, i: int) -> bytes:
     return container.read_footer(wfz_path).shell_for(i)
 
 
+def receipt_path(wfz_path: str | Path) -> Path:
+    wfz_path = Path(wfz_path)
+    return wfz_path.with_name(wfz_path.name + ".receipt.json")
+
+
 def write_receipt(
-    wfz_path: str | Path, meta: dict, extra: dict | None = None, file_log=None
+    wfz_path: str | Path, meta: dict, extra: dict | None = None, file_log=None,
+    no_clobber: bool = False,
 ) -> Path:
+    """Write the receipt beside the .wfz.
+
+    ``no_clobber`` raises FileExistsError rather than replace a receipt that exists by the time it
+    is written, even one that appeared after the caller checked.
+    """
     wfz_path = Path(wfz_path)
     receipt = {k: v for k, v in meta.items() if k != "how_to_decompress"}
     receipt.update(extra or {})
     out = wfz_path.with_name(wfz_path.name + ".receipt.json")
+    if no_clobber:
+        from .codec import _commit_no_clobber, _partial_name
+
+        tmp = _partial_name(out, no_clobber=True)
+        try:
+            filelog.record(file_log, "create", tmp, size_bytes=0, note="temporary output")
+            tmp.write_text(json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8")
+            _commit_no_clobber(tmp, out)
+        except BaseException:
+            if tmp.exists():
+                filelog.record(file_log, "delete", tmp, note="discarded, write failed")
+                tmp.unlink()
+            raise
+        filelog.record(file_log, "delete", tmp, note="renamed into place")
+        filelog.record_write(file_log, out, False)
+        return out
     existed = out.exists()
     out.write_text(json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8")
     filelog.record_write(file_log, out, existed)

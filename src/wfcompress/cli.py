@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import codec, container, extraction, sidecar
+from . import codec, container, extraction, sidecar, wfacq
 from .reader import WfzReader
 
 
@@ -34,7 +34,39 @@ def _resolve_shape(args) -> tuple[int, int] | None:
     return None
 
 
+def cmd_compress_session(args) -> int:
+    """A wfAcq session folder: compress, prove the rebuild by streaming it, then the sidecars."""
+    if args.shape or args.shape_from:
+        raise SystemExit("--shape is not used for a wfAcq session; geometry comes from "
+                         "wf_meta.json")
+    if args.no_sidecar:
+        raise SystemExit("--no-sidecar is not available for a wfAcq session: the receipt is the "
+                         "record that the rebuild was verified")
+    r = wfacq.convert_session(
+        args.src,
+        args.dst,
+        threads=args.threads,
+        progress=None if args.quiet else _progress("compress", 1),
+        verify_progress=None if args.quiet else _progress("verify", 1),
+        min_age_s=codec.DEFAULT_MIN_AGE_S if args.min_age_s is None else args.min_age_s,
+    )
+    saved = 100 * (1 - r["output_bytes"] / r["source_bytes"])
+    print(
+        f"  {r['source_bytes']/1e9:.2f} GB -> {r['output_bytes']/1e9:.2f} GB   "
+        f"x{r['ratio']:.2f}   {saved:.1f}% saved   compress {r['compress_s']/60:.1f} min, "
+        f"verify {r['verify_s']/60:.1f} min"
+    )
+    print(f"  {r['wfz']}: rebuilds wf.bin BYTE-IDENTICAL, sha256 {r['bin_sha256']}")
+    return 0
+
+
 def cmd_compress(args) -> int:
+    if Path(args.src).is_dir():
+        return cmd_compress_session(args)
+    if args.dst is None:
+        raise SystemExit("compress: the output path is required for a tar")
+    if args.min_age_s is not None:
+        raise SystemExit("--min-age-s applies to wfAcq session folders only")
     shape = _resolve_shape(args)
     meta = codec.compress(
         args.src,
@@ -116,12 +148,26 @@ def cmd_check(args) -> int:
     """Prove a .wfz rebuilds its source archive, writing nothing."""
     r = codec.verify(args.src, threads=args.threads,
                      progress=None if args.quiet else _progress("verify", 1))
+    if "bin_sha256" in r:
+        print(f"  rebuilt {r['rebuilt_bytes']/1e9:.2f} GB   wf.bin BYTE-IDENTICAL, "
+              f"{r['n_session_files']} session files match")
+        print(f"  wf.bin sha256 {r['bin_sha256']}")
+        return 0
     if r["byte_identical"] is None:
         print("  pixel hash OK; this file predates source_tar_sha256 so byte-identity "
               "cannot be checked without the original")
         return 0
     print(f"  rebuilt {r['rebuilt_bytes']/1e9:.2f} GB   sha256 {r['tar_sha256'][:16]}...   "
           f"BYTE-IDENTICAL to the source archive")
+    return 0
+
+
+def cmd_restore(args) -> int:
+    r = wfacq.restore_session(args.src, args.dst, threads=args.threads,
+                              progress=None if args.quiet else _progress("restore", 1),
+                              only_bin=args.bin_only)
+    print(f"  wrote {', '.join(r['files'])} -> {args.dst}   every file matches its recorded "
+          f"SHA-256")
     return 0
 
 
@@ -155,9 +201,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--quiet", action="store_true")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("compress", help="tar of frames -> .wfz")
-    c.add_argument("src")
-    c.add_argument("dst")
+    c = sub.add_parser(
+        "compress",
+        help="tar of frames, or a wfAcq session folder -> .wfz",
+        description="Compress a tar of frames, or a cleanly closed wfAcq session folder. For a "
+                    "session, the .wfz holds wf.bin and every small session file; it is verified "
+                    "by streaming the rebuild before the receipt is written. Nothing is deleted.",
+    )
+    c.add_argument("src", help="a .tar, or a wfAcq session folder")
+    c.add_argument("dst", nargs="?",
+                   help="output .wfz. Required for a tar; for a session folder it defaults to "
+                        "SRC/widefield.wfz, the name DataBrowser looks for")
+    c.add_argument("--min-age-s", type=float, default=None,
+                   help="wfAcq sessions only: refuse if any session file is newer than this "
+                        f"(default {codec.DEFAULT_MIN_AGE_S} s); 0 turns the check off")
     c.add_argument(
         "--shape",
         type=int,
@@ -171,7 +228,8 @@ def main(argv: list[str] | None = None) -> int:
         help="take the frame geometry from a 2-D .npy (e.g. the session's meanImage.npy) "
              "instead of spelling it out with --shape",
     )
-    c.add_argument("--no-sidecar", action="store_true", help="skip the README/receipt files")
+    c.add_argument("--no-sidecar", action="store_true",
+                   help="tar only: skip the README/receipt files")
     c.set_defaults(func=cmd_compress)
 
     d = sub.add_parser("decompress", help=".wfz -> the original tar, byte-identical")
@@ -205,6 +263,19 @@ def main(argv: list[str] | None = None) -> int:
                         "own bytes")
     x.add_argument("--overwrite", action="store_true", help="replace existing output files")
     x.set_defaults(func=cmd_extract)
+
+    rs = sub.add_parser(
+        "restore",
+        help="session .wfz -> wf.bin and the session files, byte-identical",
+        description="Write wf.bin and every stored session file into DIR, normally a new, "
+                    "empty folder. Refuses if any of them already exists there; nothing is ever "
+                    "replaced. --bin-only writes wf.bin alone, to put it back into a session "
+                    "folder whose small files are still present.",
+    )
+    rs.add_argument("src")
+    rs.add_argument("dst", metavar="DIR")
+    rs.add_argument("--bin-only", action="store_true", help="write wf.bin only")
+    rs.set_defaults(func=cmd_restore)
 
     v = sub.add_parser("verify", help="compare the sha256 of two files")
     v.add_argument("a")
