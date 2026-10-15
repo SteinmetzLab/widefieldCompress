@@ -31,6 +31,7 @@ import json
 import os
 import struct
 import time
+import zipfile
 import zlib
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -557,6 +558,7 @@ def verify_session(
         "wfz_sha256": whole.hexdigest(),
         "wfz_bytes": container.HEADER_LEN + (payload_end - container.PAYLOAD_START)
         + len(footer_bytes),
+        "footer_bytes": len(footer_bytes),
         "elapsed_s": time.perf_counter() - t0,
     }
 
@@ -684,26 +686,95 @@ def convert_session(
     meta = compress_session(session, dst, threads=threads, batch=batch, progress=progress,
                             min_age_s=min_age_s, file_log=file_log)
     v = verify_session(dst, threads=threads, batch=batch, progress=verify_progress)
+    _write_sidecars(dst, meta, v, file_log)
+    return _result(session, dst, meta, v, meta["elapsed_s"], t0)
 
+
+def finish_session(
+    session: str | Path,
+    dst: str | Path | None = None,
+    threads: int = DEFAULT_THREADS,
+    batch: int = DEFAULT_BATCH,
+    verify_progress: Callable[[int, int, float], None] | None = None,
+    min_age_s: float = DEFAULT_MIN_AGE_S,
+    file_log: str | None = None,
+) -> dict:
+    """Finish a :func:`convert_session` that stopped after its .wfz was in place but before the
+    receipt: verify the .wfz, then write the README, preview and receipt as ``convert_session``
+    does. Nothing is compressed again, and nothing is deleted.
+
+    The .wfz is renamed into place only once compression has finished, so what is left is the
+    verification. Refuses (:class:`SessionRefused`) unless the .wfz is of this session as it is now:
+    the same ``session_id``, ``wf.bin`` the same size and modification time as when it was read,
+    and the same small session files, byte for byte. Refuses (``FileExistsError``) a .wfz that
+    already has its receipt. A .wfz that fails verification raises
+    :class:`LosslessCheckFailed`, and no receipt is written; so does a file that is not a complete
+    session .wfz. The receipt is ``convert_session``'s without ``elapsed_s`` (nothing was
+    compressed), with ``finished_after_stop: true``.
+    """
+    t0 = time.perf_counter()
+    session = Path(session)
+    dst = Path(dst) if dst is not None else session / DEFAULT_NAME
+    if not dst.is_file():
+        raise FileNotFoundError(f"{dst} not found: nothing to finish")
+    if sidecar.receipt_path(dst).exists():
+        raise FileExistsError(f"{dst} already has its receipt: nothing to finish")
+    s = inspect_session(session, min_age_s)
+    try:
+        meta = container.read_footer(dst).meta
+        _require_session_wfz(meta, dst)
+    except (ValueError, OSError, zipfile.BadZipFile, KeyError, struct.error) as exc:
+        if isinstance(exc, FileNotFoundError):
+            raise
+        raise LosslessCheckFailed(f"{dst} is not a complete session .wfz: {exc}") from exc
+    here, there = s.meta.get("session_id"), (meta.get("wfacq") or {}).get("session_id")
+    if not here or here != there:
+        raise SessionRefused(f"{dst} is of session {there!r}, not this folder's {here!r}")
+    same_bin = (s.bin_bytes == meta.get("source_bin_bytes")
+                and s.fingerprint[BIN][1] == meta.get("source_bin_mtime_ns"))
+    if not same_bin:
+        raise SessionRefused(f"{BIN} changed since {dst} was made from it: compress it again")
+    stored = meta.get("session_files") or {}
+    changed = sorted(n for n in set(stored) | set(s.data)
+                     if n not in stored or n not in s.data
+                     or hashlib.sha256(s.data[n]).hexdigest() != stored[n].get("sha256"))
+    if changed:
+        raise SessionRefused(f"{', '.join(changed)} changed since {dst} was made: "
+                             "compress it again")
+    v = verify_session(dst, threads=threads, batch=batch, progress=verify_progress)
+    if v["expected_bin_sha256"] != meta["source_bin_sha256"]:  # the file changed under us
+        raise LosslessCheckFailed(f"{dst} changed while it was being verified")
+    # What compress_session adds after the footer is written, from the file just verified.
+    meta["output_bytes"] = v["wfz_bytes"]
+    meta["footer_bytes"] = v["footer_bytes"]
+    meta["ratio"] = s.bin_bytes / meta["output_bytes"]
+    _write_sidecars(dst, meta, v, file_log, finished_after_stop=True)
+    return _result(session, dst, meta, v, None, t0)
+
+
+def _write_sidecars(dst: Path, meta: dict, v: dict, file_log,
+                    finished_after_stop: bool = False) -> None:
+    """The README, preview and receipt beside a .wfz that ``v`` (verify_session) has proved."""
     meta["byte_identical_verified"] = True
     sidecar.write_readme(dst, meta, file_log=file_log)
     sidecar.write_preview_frame(dst, file_log=file_log)
-    sidecar.write_receipt(
-        dst,
-        meta,
-        extra={
-            "byte_identical": v["byte_identical"],
-            "bin_sha256": v["bin_sha256"],
-            "session_files_ok": v["session_files_ok"],
-            "wfz_sha256": v["wfz_sha256"],
-            "wfz_bytes": v["wfz_bytes"],
-            "verified_by": "stream",
-            "verified_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "verify_elapsed_s": v["elapsed_s"],
-        },
-        file_log=file_log,
-        no_clobber=True,
-    )
+    extra = {
+        "byte_identical": v["byte_identical"],
+        "bin_sha256": v["bin_sha256"],
+        "session_files_ok": v["session_files_ok"],
+        "wfz_sha256": v["wfz_sha256"],
+        "wfz_bytes": v["wfz_bytes"],
+        "verified_by": "stream",
+        "verified_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "verify_elapsed_s": v["elapsed_s"],
+    }
+    if finished_after_stop:
+        # Verified by finish_session, not by the run that compressed it.
+        extra["finished_after_stop"] = True
+    sidecar.write_receipt(dst, meta, extra=extra, file_log=file_log, no_clobber=True)
+
+
+def _result(session: Path, dst: Path, meta: dict, v: dict, compress_s, t0: float) -> dict:
     return {
         "session": str(session),
         "wfz": str(dst),
@@ -711,7 +782,7 @@ def convert_session(
         "source_bytes": meta["source_bytes"],
         "output_bytes": meta["output_bytes"],
         "ratio": meta["ratio"],
-        "compress_s": meta["elapsed_s"],
+        "compress_s": compress_s,
         "verify_s": v["elapsed_s"],
         "bin_sha256": v["bin_sha256"],
         "wfz_sha256": v["wfz_sha256"],

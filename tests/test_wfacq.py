@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import time
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -721,3 +722,135 @@ def test_no_clobber_commit_where_hard_links_are_unsupported(tmp_path, monkeypatc
     with pytest.raises(FileExistsError):
         codec._commit_no_clobber(tmp, dst)
     assert dst.read_bytes() == b"new"
+
+
+# -- finishing a conversion stopped while it verified --------------------------------------------
+
+
+class Stopped(Exception):
+    pass
+
+
+def stopped_while_verifying(session):
+    """convert_session stopped during verification: the .wfz in place, no receipt."""
+
+    def stop(done, total, elapsed):
+        raise Stopped()
+
+    with pytest.raises(Stopped):
+        wa.convert_session(session, batch=4, verify_progress=stop)
+    wfz = session / "widefield.wfz"
+    assert wfz.is_file() and not (session / "widefield.wfz.receipt.json").exists()
+    return wfz
+
+
+def test_finish_verifies_and_writes_the_receipt_convert_would_have(session, tmp_path):
+    twin = make_session(tmp_path / "twin" / "TEST_0001" / "2026-10-12" / "1")
+    receipt_file = Path(wa.convert_session(twin)["wfz"] + ".receipt.json")
+    whole = json.loads(receipt_file.read_text(encoding="utf-8"))
+    wfz = stopped_while_verifying(session)
+    before = snapshot(session)
+    r = wa.finish_session(session)
+    assert r["byte_identical"] is True and r["compress_s"] is None
+    receipt = json.loads((session / "widefield.wfz.receipt.json").read_text(encoding="utf-8"))
+    assert receipt["byte_identical"] is True and receipt["byte_identical_verified"] is True
+    assert receipt["finished_after_stop"] is True
+    assert receipt["bin_sha256"] == sha(session / "wf.bin")
+    assert receipt["wfz_sha256"] == sha(wfz) and receipt["wfz_bytes"] == wfz.stat().st_size
+    # The same receipt as an uninterrupted run, but for the time compressing took.
+    assert set(whole) - set(receipt) == {"elapsed_s"}
+    assert set(receipt) - set(whole) == {"finished_after_stop"}
+    footer_offset = int.from_bytes(wfz.read_bytes()[8:16], "little")
+    assert receipt["output_bytes"] == wfz.stat().st_size
+    assert receipt["footer_bytes"] == wfz.stat().st_size - footer_offset
+    readme = (session / "widefield.wfz.README.md").read_text(encoding="utf-8")
+    assert "Verified: the rebuilt wf.bin was hashed end to end" in readme
+    assert f"{wfz.stat().st_size:,} bytes" in readme
+    after = snapshot(session)
+    for name, digest in before.items():  # nothing that was there is changed
+        assert after[name] == digest
+
+
+def test_finish_refuses_a_wfz_that_has_its_receipt(session):
+    wa.convert_session(session)
+    with pytest.raises(FileExistsError, match="already has its receipt"):
+        wa.finish_session(session)
+
+
+def test_finish_refuses_when_wf_bin_changed_since(session):
+    stopped_while_verifying(session)
+    t = (session / "wf.bin").stat().st_mtime + 5
+    os.utime(session / "wf.bin", (t, t))
+    with pytest.raises(wa.SessionRefused, match="wf.bin changed"):
+        wa.finish_session(session, min_age_s=0)
+    assert not (session / "widefield.wfz.receipt.json").exists()
+
+
+def test_finish_refuses_when_a_session_file_changed_since(session):
+    stopped_while_verifying(session)
+    p = session / "wf_events.jsonl"
+    st = p.stat()
+    p.write_bytes(p.read_bytes() + b"\n")
+    os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+    with pytest.raises(wa.SessionRefused, match="wf_events.jsonl changed"):
+        wa.finish_session(session, min_age_s=0)
+
+
+def test_finish_refuses_another_sessions_wfz(session, tmp_path):
+    wfz = stopped_while_verifying(session)
+    other = make_session(tmp_path / "other" / "TEST_0001" / "2026-10-12" / "1",
+                         meta={"session_id": "f" * 32})
+    os.replace(wfz, other / "widefield.wfz")
+    with pytest.raises(wa.SessionRefused, match="is of session"):
+        wa.finish_session(other)
+
+
+def test_finish_writes_no_receipt_for_a_wfz_that_fails_verification(session):
+    wfz = stopped_while_verifying(session)
+    footer = container.read_footer(wfz)
+    off = int(footer.index[3, 0]) + 20
+    with open(wfz, "r+b") as fh:
+        fh.seek(off)
+        b = fh.read(1)
+        fh.seek(off)
+        fh.write(bytes([b[0] ^ 0x01]))
+    with pytest.raises(codec.LosslessCheckFailed):
+        wa.finish_session(session)
+    assert not (session / "widefield.wfz.receipt.json").exists()
+
+
+@pytest.mark.parametrize("content", [b"", b"WFZ1" + b"\0" * 40])
+def test_finish_refuses_a_file_that_isnt_a_whole_session_wfz(session, content):
+    (session / "widefield.wfz").write_bytes(content)
+    with pytest.raises(codec.LosslessCheckFailed, match="not a complete session .wfz"):
+        wa.finish_session(session)
+    assert not (session / "widefield.wfz.receipt.json").exists()
+
+
+def test_finish_never_replaces_a_receipt_that_appears_while_it_verifies(session):
+    stopped_while_verifying(session)
+    receipt = session / "widefield.wfz.receipt.json"
+
+    def appear(done, total, elapsed):
+        if not receipt.exists():
+            receipt.write_text("another run's receipt", encoding="utf-8")
+
+    with pytest.raises(FileExistsError):
+        wa.finish_session(session, batch=4, verify_progress=appear)
+    assert receipt.read_text(encoding="utf-8") == "another run's receipt"
+
+
+def test_finish_vouches_for_the_bytes_read_then_not_wf_bin_now(session):
+    """The documented contract: the receipt's bin_sha256 is the hash taken while compressing. A
+    wf.bin changed since with its size and time kept isn't read here; whoever deletes wf.bin must
+    hash it again against bin_sha256 (wfAcq does)."""
+    stopped_while_verifying(session)
+    p = session / "wf.bin"
+    st = p.stat()
+    data = bytearray(p.read_bytes())
+    data[100] ^= 0x01
+    p.write_bytes(bytes(data))
+    os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+    wa.finish_session(session)
+    receipt = json.loads((session / "widefield.wfz.receipt.json").read_text(encoding="utf-8"))
+    assert receipt["bin_sha256"] != sha(p)
