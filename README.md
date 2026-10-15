@@ -149,6 +149,11 @@ wfcompress restore  path/to/session/widefield.wfz path/to/session/ --bin-only
 - `check` proves the `.wfz` holds exactly the bytes read from `wf.bin`. It does not prove that the
   copy that was read was complete. Deleting `wf.bin` should also re-hash it against
   `source_bin_sha256` in the receipt. Nothing here deletes anything.
+- **A run stopped while it verifies can be finished.** The `.wfz` is renamed into place only once
+  compression has finished, so a stop during the verify leaves a complete `.wfz` with no receipt.
+  `wfacq.finish_session(session)` verifies it and writes the README, preview and receipt as
+  `convert_session` would, without compressing again, if `wf.bin` and the small files are
+  unchanged since they were read. Its receipt says `finished_after_stop: true`.
 - The `.wfz`, the restored files and the receipt never replace anything: each refuses an existing
   file, including one that appears while a run is in progress. The `.wfz.README.md` and
   `.wfz.frame.tif` beside it only describe the `.wfz`, and are rewritten if present.
